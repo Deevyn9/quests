@@ -11,7 +11,7 @@ function coveredDays(q: Quest): Set<DateKey> {
   return new Set([...q.checkIns, ...q.restoredDates]);
 }
 
-function isSkipped(q: Quest, day: DateKey): boolean {
+export function isSkipped(q: Quest, day: DateKey): boolean {
   return q.skipWeekdays.includes(weekdayOf(day)) || q.skippedDates.includes(day);
 }
 
