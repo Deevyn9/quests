@@ -97,3 +97,32 @@ describe("quest store", () => {
     expect(store.getState().quests).toEqual([]);
   });
 });
+
+describe("trophies", () => {
+  it("unlocks First Steps when the first quest is created", () => {
+    const { store } = setup();
+    store.getState().addQuest(input);
+    expect(store.getState().trophies).toHaveProperty("first-quest", "2026-09-01");
+    expect(store.getState().toast?.message).toMatch(/first steps/i);
+  });
+
+  it("keeps a trophy after the quest that earned it is deleted", () => {
+    const { store } = setup();
+    store.getState().addQuest(input);
+    store.getState().deleteQuest(store.getState().quests[0].id);
+    expect(store.getState().trophies).toHaveProperty("first-quest");
+  });
+
+  it("unlocks Week Warrior on a 7-day streak", () => {
+    const { store, setDay } = setup();
+    store.getState().addQuest({ ...input, durationDays: 30 });
+    const id = store.getState().quests[0].id;
+
+    for (let d = 1; d <= 7; d++) {
+      setDay(`2026-09-0${d}`);
+      store.getState().checkInQuest(id);
+    }
+
+    expect(store.getState().trophies).toHaveProperty("streak-7");
+  });
+});

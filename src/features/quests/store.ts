@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createQuest, type NewQuestInput } from "@/lib/domain/create";
 import { todayIn } from "@/lib/domain/dates";
 import * as domain from "@/lib/domain/quest";
+import { newlyEarned } from "@/lib/domain/trophies";
 import { INFINITE_REWARD_EVERY, type DateKey, type Quest } from "@/lib/domain/types";
 
 type Toast = { id: number; message: string };
@@ -9,6 +10,7 @@ type Toast = { id: number; message: string };
 export type QuestState = {
   quests: Quest[]; // display order: most recent activity first
   restores: number;
+  trophies: Record<string, DateKey>; // trophy key -> day it was earned
   toast: Toast | null;
   today: () => DateKey;
   addQuest: (input: NewQuestInput) => void;
@@ -33,16 +35,37 @@ export const createQuestStore = (today: () => DateKey = browserToday) =>
       ...quests.filter((q) => q.id !== updated.id),
     ];
 
+    // Works out any newly unlocked trophies and builds the matching state + toast.
+    const grant = (s: QuestState, quests: Quest[], now: DateKey, message: string | null) => {
+      const earned = newlyEarned(quests, Object.keys(s.trophies), now);
+      const trophies = { ...s.trophies };
+      for (const t of earned) trophies[t.key] = now;
+
+      const names = earned.map((t) => t.title).join(", ");
+      const text = earned.length
+        ? message
+          ? `${message} · Trophy: ${names}`
+          : `Trophy unlocked: ${names}`
+        : message;
+
+      return { trophies, ...(text ? { toast: toast(text) } : {}) };
+    };
+
     return {
       quests: [],
       restores: 0,
+      trophies: {},
       toast: null,
       today,
 
       addQuest: (input) => {
         // Throws on invalid input; the modal shows the message.
-        const quest = createQuest(input, today(), crypto.randomUUID());
-        set((s) => ({ quests: [quest, ...s.quests] }));
+        const now = today();
+        const quest = createQuest(input, now, crypto.randomUUID());
+        set((s) => {
+          const quests = [quest, ...s.quests];
+          return { quests, ...grant(s, quests, now, null) };
+        });
       },
 
       checkInQuest: (id) => {
@@ -65,23 +88,30 @@ export const createQuestStore = (today: () => DateKey = browserToday) =>
               ? "Quest complete! +1 restore"
               : `${INFINITE_REWARD_EVERY}-day streak! +1 restore`;
 
-        set((s) => ({
-          quests: moveToTop(s.quests, updated),
-          restores: s.restores + earned,
-          toast: toast(message),
-        }));
+        set((s) => {
+          const quests = moveToTop(s.quests, updated);
+          return {
+            quests,
+            restores: s.restores + earned,
+            ...grant(s, quests, now, message),
+          };
+        });
       },
 
       restoreStreak: (id) => {
         const quest = find(id);
         if (!quest) return;
+        const now = today();
         try {
-          const result = domain.restoreQuest(quest, today(), get().restores);
-          set((s) => ({
-            quests: replace(s.quests, result.quest),
-            restores: result.restores,
-            toast: toast("Streak restored"),
-          }));
+          const result = domain.restoreQuest(quest, now, get().restores);
+          set((s) => {
+            const quests = replace(s.quests, result.quest);
+            return {
+              quests,
+              restores: result.restores,
+              ...grant(s, quests, now, "Streak restored"),
+            };
+          });
         } catch {
           return; // lapsed, or no restores left
         }
@@ -90,10 +120,11 @@ export const createQuestStore = (today: () => DateKey = browserToday) =>
       restartQuest: (id) => {
         const quest = find(id);
         if (!quest) return;
-        set((s) => ({
-          quests: replace(s.quests, domain.restartQuest(quest, today())),
-          toast: toast("Fresh start"),
-        }));
+        const now = today();
+        set((s) => {
+          const quests = replace(s.quests, domain.restartQuest(quest, now));
+          return { quests, ...grant(s, quests, now, "Fresh start") };
+        });
       },
 
       deleteQuest: (id) => set((s) => ({ quests: s.quests.filter((q) => q.id !== id) })),
