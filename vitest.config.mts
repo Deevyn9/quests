@@ -12,6 +12,7 @@ export default defineConfig({
   test: {
     environment: "node",
     pool: "threads",
+    maxWorkers: 1,
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
   },
