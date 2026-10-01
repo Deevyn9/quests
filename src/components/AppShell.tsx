@@ -29,7 +29,7 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
   );
 
   return (
-    <div className="relative min-h-dvh bg-sky-100 text-slate-800">
+    <div className="relative min-h-dvh bg-white text-slate-800">
       {user && <TrophyButton />}
 
       <main className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-8 px-6 pt-20 pb-40 md:grid md:grid-cols-[1fr_2fr_1fr] md:pt-16">
