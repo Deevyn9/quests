@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useFlipReorder } from "@/features/quests/useFlipReorder";
 import { useQuestStore } from "@/features/quests/store";
 import { getStatus } from "@/lib/domain/quest";
 import { Cloud } from "./Cloud";
@@ -10,6 +11,7 @@ import { QuestCard } from "./QuestCard";
 import { SignInPrompt } from "./SignInPrompt";
 import { Toast } from "./Toast";
 import { TrophyButton } from "./TrophyButton";
+import { TrophyPanel } from "./TrophyPanel";
 
 type Props = {
   user: { name: string | null } | null;
@@ -19,18 +21,26 @@ type Props = {
 
 export function AppShell({ user, signInAction, signOutAction }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [trophiesOpen, setTrophiesOpen] = useState(false);
+  const listRef = useRef<HTMLUListElement>(null);
+
   const quests = useQuestStore((s) => s.quests);
   const restores = useQuestStore((s) => s.restores);
+  const trophies = useQuestStore((s) => s.trophies);
   const today = useQuestStore((s) => s.today());
 
-  // Completed quests leave the list; the trophy panel will show them later.
   const visible = quests.filter(
     (q) => getStatus(q, today).state !== "completed",
   );
+  const completed = quests.filter(
+    (q) => getStatus(q, today).state === "completed",
+  );
+
+  useFlipReorder(listRef, visible.map((q) => q.id).join(","));
 
   return (
-    <div className="relative min-h-dvh bg-white text-slate-800">
-      {user && <TrophyButton />}
+    <div className="relative min-h-dvh bg-sky-100 text-slate-800">
+      {user && <TrophyButton onClick={() => setTrophiesOpen(true)} />}
 
       <main className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-8 px-6 pt-20 pb-40 md:grid md:grid-cols-[1fr_2fr_1fr] md:pt-16">
         <header className="md:sticky md:top-16 md:self-start">
@@ -73,9 +83,9 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
               {visible.length === 0 ? (
                 <EmptyState onStart={() => setModalOpen(true)} />
               ) : (
-                <ul className="flex flex-col gap-4">
+                <ul ref={listRef} className="flex flex-col gap-4">
                   {visible.map((quest) => (
-                    <li key={quest.id}>
+                    <li key={quest.id} data-flip-id={quest.id}>
                       <QuestCard quest={quest} />
                     </li>
                   ))}
@@ -91,6 +101,14 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
 
       <Cloud />
       <NewQuestModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      {user && (
+        <TrophyPanel
+          open={trophiesOpen}
+          onClose={() => setTrophiesOpen(false)}
+          trophies={trophies}
+          completed={completed}
+        />
+      )}
       <Toast />
     </div>
   );

@@ -1,9 +1,13 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useQuestStore } from "@/features/quests/store";
 import { AppShell } from "./AppShell";
+
+vi.mock("@/features/quests/useFlipReorder", () => ({
+  useFlipReorder: () => {},
+}));
 
 const initialState = useQuestStore.getState();
 
@@ -89,6 +93,31 @@ describe("AppShell (signed in)", () => {
     expect(
       screen.queryByRole("button", { name: /check in today/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("opens the trophy panel from the trophy button", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    expect(
+      screen.queryByRole("dialog", { name: /trophies/i }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /open trophies/i }));
+
+    expect(
+      screen.getByRole("dialog", { name: /trophies/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("unlocks First Steps after creating a quest", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await createQuest(user, "Read 10 pages");
+
+    await user.click(screen.getByRole("button", { name: /open trophies/i }));
+
+    expect(screen.getByText(/^Earned /)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/first steps/i);
   });
 });
 
