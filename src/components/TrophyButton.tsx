@@ -1,8 +1,9 @@
-export function TrophyButton() {
+export function TrophyButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
       aria-label="Open trophies"
+      onClick={onClick}
       className="fixed top-4 right-4 z-20 grid size-11 place-items-center rounded-full bg-white shadow-md transition hover:scale-105"
     >
       <svg
