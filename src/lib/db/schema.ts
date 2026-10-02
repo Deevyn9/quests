@@ -53,3 +53,15 @@ export const questDays = pgTable(
   },
   (t) => [primaryKey({ columns: [t.questId, t.date] })],
 ).enableRLS();
+
+export const trophies = pgTable(
+  "trophies",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    earnedOn: date("earned_on", { mode: "string" }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.key] })],
+).enableRLS();
