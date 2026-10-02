@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useQuestStore } from "@/features/quests/store";
 import { AppShell } from "./AppShell";
@@ -12,7 +12,8 @@ vi.mock("@/features/quests/useFlipReorder", () => ({
 const initialState = useQuestStore.getState();
 
 beforeEach(() => {
-  useQuestStore.setState(initialState, true); // fresh store for every test
+  // fresh store for every test, already loaded
+  useQuestStore.setState({ ...initialState, ready: true }, true);
 });
 afterEach(cleanup);
 
@@ -56,6 +57,14 @@ describe("AppShell (signed in)", () => {
   it("shows the empty state when there are no quests", () => {
     renderApp();
     expect(screen.getByText(/no quests at the moment/i)).toBeInTheDocument();
+  });
+
+  it("holds the list back until saved quests have loaded", () => {
+    useQuestStore.setState({ ready: false });
+    renderApp();
+    expect(
+      screen.queryByText(/no quests at the moment/i),
+    ).not.toBeInTheDocument();
   });
 
   it("creates a quest from the modal and lists it", async () => {
@@ -118,6 +127,20 @@ describe("AppShell (signed in)", () => {
 
     expect(screen.getByText(/^Earned /)).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent(/first steps/i);
+  });
+
+  it("asks for confirmation before signing out", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getByRole("button", { name: /sign out/i }));
+    const dialog = screen.getByRole("dialog", { name: /sign out\?/i });
+    expect(dialog).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: /cancel/i }));
+    expect(
+      screen.queryByRole("dialog", { name: /sign out\?/i }),
+    ).not.toBeInTheDocument();
   });
 });
 

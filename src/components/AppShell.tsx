@@ -9,6 +9,7 @@ import { EmptyState } from "./EmptyState";
 import { NewQuestModal } from "./NewQuestModal";
 import { QuestCard } from "./QuestCard";
 import { SignInPrompt } from "./SignInPrompt";
+import { SignOutDialog } from "./SignOutDialog";
 import { Toast } from "./Toast";
 import { TrophyButton } from "./TrophyButton";
 import { TrophyPanel } from "./TrophyPanel";
@@ -19,11 +20,23 @@ type Props = {
   signOutAction: () => Promise<void>;
 };
 
+function ListSkeleton() {
+  return (
+    <div aria-busy="true" className="flex flex-col gap-4">
+      {[0, 1].map((i) => (
+        <div key={i} className="h-32 animate-pulse rounded-2xl bg-white/50" />
+      ))}
+    </div>
+  );
+}
+
 export function AppShell({ user, signInAction, signOutAction }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [trophiesOpen, setTrophiesOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
   const listRef = useRef<HTMLUListElement>(null);
 
+  const ready = useQuestStore((s) => s.ready);
   const quests = useQuestStore((s) => s.quests);
   const restores = useQuestStore((s) => s.restores);
   const trophies = useQuestStore((s) => s.trophies);
@@ -55,14 +68,13 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
               <p className="mt-2 text-sm text-slate-500">
                 Restores: {restores}
               </p>
-              <form action={signOutAction} className="mt-3">
-                <button
-                  type="submit"
-                  className="text-xs text-slate-500 underline hover:text-slate-800"
-                >
-                  Sign out
-                </button>
-              </form>
+              <button
+                type="button"
+                onClick={() => setSignOutOpen(true)}
+                className="mt-3 text-xs text-slate-500 underline hover:text-slate-800"
+              >
+                Sign out
+              </button>
             </>
           )}
         </header>
@@ -80,7 +92,9 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
                 New quest
               </button>
 
-              {visible.length === 0 ? (
+              {!ready ? (
+                <ListSkeleton />
+              ) : visible.length === 0 ? (
                 <EmptyState onStart={() => setModalOpen(true)} />
               ) : (
                 <ul ref={listRef} className="flex flex-col gap-4">
@@ -102,12 +116,19 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
       <Cloud />
       <NewQuestModal open={modalOpen} onClose={() => setModalOpen(false)} />
       {user && (
-        <TrophyPanel
-          open={trophiesOpen}
-          onClose={() => setTrophiesOpen(false)}
-          trophies={trophies}
-          completed={completed}
-        />
+        <>
+          <TrophyPanel
+            open={trophiesOpen}
+            onClose={() => setTrophiesOpen(false)}
+            trophies={trophies}
+            completed={completed}
+          />
+          <SignOutDialog
+            open={signOutOpen}
+            onCancel={() => setSignOutOpen(false)}
+            signOutAction={signOutAction}
+          />
+        </>
       )}
       <Toast />
     </div>
