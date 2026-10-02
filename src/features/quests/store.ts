@@ -1,18 +1,28 @@
 import { create } from "zustand";
-import { createQuest, type NewQuestInput } from "@/lib/domain/create";
+import type { NewQuestInput } from "@/lib/domain/create";
 import { todayIn } from "@/lib/domain/dates";
-import * as domain from "@/lib/domain/quest";
-import { newlyEarned } from "@/lib/domain/trophies";
-import { INFINITE_REWARD_EVERY, type DateKey, type Quest } from "@/lib/domain/types";
+import * as moves from "@/lib/domain/transitions";
+import { EMPTY_STATE, type AppState, type Transition } from "@/lib/domain/transitions";
+import type { DateKey } from "@/lib/domain/types";
 
 type Toast = { id: number; message: string };
 
-export type QuestState = {
-  quests: Quest[]; // display order: most recent activity first
-  restores: number;
-  trophies: Record<string, DateKey>; // trophy key -> day it was earned
+// What the store needs from the server. Injected, so tests never touch the network.
+export type QuestApi = {
+  addQuest: (input: NewQuestInput, id: string, today: DateKey) => Promise<void>;
+  checkIn: (id: string, today: DateKey) => Promise<void>;
+  restore: (id: string, today: DateKey) => Promise<void>;
+  restart: (id: string, today: DateKey) => Promise<void>;
+  remove: (id: string) => Promise<void>;
+  load: () => Promise<AppState>;
+};
+
+export type QuestState = AppState & {
+  ready: boolean; // false until the saved quests have been loaded
   toast: Toast | null;
   today: () => DateKey;
+  hydrate: (state: AppState) => void;
+  connect: (api: QuestApi) => void;
   addQuest: (input: NewQuestInput) => void;
   checkInQuest: (id: string) => void;
   restoreStreak: (id: string) => void;
@@ -23,111 +33,96 @@ export type QuestState = {
 
 const browserToday = () => todayIn(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
-export const createQuestStore = (today: () => DateKey = browserToday) =>
+export const createQuestStore = (today: () => DateKey = browserToday, initialApi?: QuestApi) =>
   create<QuestState>()((set, get) => {
+    let api = initialApi;
     let toastSeq = 0;
     const toast = (message: string): Toast => ({ id: ++toastSeq, message });
-    const find = (id: string) => get().quests.find((q) => q.id === id);
-    const replace = (quests: Quest[], updated: Quest) =>
-      quests.map((q) => (q.id === updated.id ? updated : q));
-    const moveToTop = (quests: Quest[], updated: Quest) => [
-      updated,
-      ...quests.filter((q) => q.id !== updated.id),
-    ];
 
-    // Works out any newly unlocked trophies and builds the matching state + toast.
-    const grant = (s: QuestState, quests: Quest[], now: DateKey, message: string | null) => {
-      const earned = newlyEarned(quests, Object.keys(s.trophies), now);
-      const trophies = { ...s.trophies };
-      for (const t of earned) trophies[t.key] = now;
-
-      const names = earned.map((t) => t.title).join(", ");
-      const text = earned.length
-        ? message
-          ? `${message} · Trophy: ${names}`
-          : `Trophy unlocked: ${names}`
-        : message;
-
-      return { trophies, ...(text ? { toast: toast(text) } : {}) };
+    const snapshot = (): AppState => {
+      const { quests, restores, trophies } = get();
+      return { quests, restores, trophies };
     };
 
+    // A save failed: trust the server, or fall back to what we had before the change.
+    async function recover(server: QuestApi, fallback: AppState) {
+      try {
+        const fresh = await server.load();
+        set({ ...fresh, toast: toast("Couldn't save that, so we refreshed from the server") });
+      } catch {
+        set({ ...fallback, toast: toast("Couldn't save that. Check your connection") });
+      }
+    }
+
+    // Shows the change on screen straight away, then saves it in the background.
+    function apply(step: (s: AppState) => Transition, save?: (server: QuestApi) => Promise<void>) {
+      const before = snapshot();
+      const { state, message } = step(before); // throws when the change isn't allowed
+      set({ ...state, ...(message ? { toast: toast(message) } : {}) });
+
+      const server = api;
+      if (server && save) save(server).catch(() => recover(server, before));
+    }
+
+    // Same, but a change that isn't allowed (a double click, say) is silently ignored.
+    function tryApply(step: (s: AppState) => Transition, save?: (server: QuestApi) => Promise<void>) {
+      try {
+        apply(step, save);
+      } catch {
+        // ignored on purpose
+      }
+    }
+
     return {
-      quests: [],
-      restores: 0,
-      trophies: {},
+      ...EMPTY_STATE,
+      ready: false,
       toast: null,
       today,
+
+      hydrate: (state) => set({ ...state, ready: true }),
+      connect: (server) => {
+        api = server;
+      },
 
       addQuest: (input) => {
         // Throws on invalid input; the modal shows the message.
         const now = today();
-        const quest = createQuest(input, now, crypto.randomUUID());
-        set((s) => {
-          const quests = [quest, ...s.quests];
-          return { quests, ...grant(s, quests, now, null) };
-        });
+        const id = crypto.randomUUID();
+        apply(
+          (s) => moves.addQuest(s, input, now, id),
+          (server) => server.addQuest(input, id, now),
+        );
       },
 
       checkInQuest: (id) => {
-        const quest = find(id);
-        if (!quest) return;
         const now = today();
-
-        let updated: Quest;
-        try {
-          updated = domain.checkIn(quest, now);
-        } catch {
-          return; // not active, or already checked in today
-        }
-
-        const earned = domain.restoresEarnedOnCheckIn(updated, now);
-        const message =
-          earned === 0
-            ? "Checked in. Nice one!"
-            : updated.kind === "fixed"
-              ? "Quest complete! +1 restore"
-              : `${INFINITE_REWARD_EVERY}-day streak! +1 restore`;
-
-        set((s) => {
-          const quests = moveToTop(s.quests, updated);
-          return {
-            quests,
-            restores: s.restores + earned,
-            ...grant(s, quests, now, message),
-          };
-        });
+        tryApply(
+          (s) => moves.checkInQuest(s, id, now),
+          (server) => server.checkIn(id, now),
+        );
       },
 
       restoreStreak: (id) => {
-        const quest = find(id);
-        if (!quest) return;
         const now = today();
-        try {
-          const result = domain.restoreQuest(quest, now, get().restores);
-          set((s) => {
-            const quests = replace(s.quests, result.quest);
-            return {
-              quests,
-              restores: result.restores,
-              ...grant(s, quests, now, "Streak restored"),
-            };
-          });
-        } catch {
-          return; // lapsed, or no restores left
-        }
+        tryApply(
+          (s) => moves.restoreStreak(s, id, now),
+          (server) => server.restore(id, now),
+        );
       },
 
       restartQuest: (id) => {
-        const quest = find(id);
-        if (!quest) return;
         const now = today();
-        set((s) => {
-          const quests = replace(s.quests, domain.restartQuest(quest, now));
-          return { quests, ...grant(s, quests, now, "Fresh start") };
-        });
+        tryApply(
+          (s) => moves.restartQuest(s, id, now),
+          (server) => server.restart(id, now),
+        );
       },
 
-      deleteQuest: (id) => set((s) => ({ quests: s.quests.filter((q) => q.id !== id) })),
+      deleteQuest: (id) =>
+        tryApply(
+          (s) => moves.deleteQuest(s, id),
+          (server) => server.remove(id),
+        ),
 
       dismissToast: () => set({ toast: null }),
     };

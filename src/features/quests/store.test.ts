@@ -1,12 +1,22 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { getStatus } from "@/lib/domain/quest";
-import { createQuestStore } from "./store";
+import { createQuestStore, type QuestApi } from "./store";
 
 const input = { title: "Read", kind: "fixed" as const, durationDays: 7, skipWeekdays: [] };
 
-function setup(start = "2026-09-01") {
+const makeApi = (over: Partial<QuestApi> = {}): QuestApi => ({
+  addQuest: vi.fn().mockResolvedValue(undefined),
+  checkIn: vi.fn().mockResolvedValue(undefined),
+  restore: vi.fn().mockResolvedValue(undefined),
+  restart: vi.fn().mockResolvedValue(undefined),
+  remove: vi.fn().mockResolvedValue(undefined),
+  load: vi.fn().mockResolvedValue({ quests: [], restores: 0, trophies: {} }),
+  ...over,
+});
+
+function setup(start = "2026-09-01", api?: QuestApi) {
   let day = start;
-  const store = createQuestStore(() => day);
+  const store = createQuestStore(() => day, api);
   return { store, setDay: (d: string) => (day = d) };
 }
 
@@ -124,5 +134,70 @@ describe("trophies", () => {
     }
 
     expect(store.getState().trophies).toHaveProperty("streak-7");
+  });
+});
+
+describe("loading", () => {
+  it("shows loaded quests and becomes ready", () => {
+    const { store } = setup();
+    expect(store.getState().ready).toBe(false);
+
+    store.getState().hydrate({ quests: [], restores: 3, trophies: {} });
+
+    expect(store.getState().ready).toBe(true);
+    expect(store.getState().restores).toBe(3);
+  });
+});
+
+describe("saving to the server", () => {
+  it("sends a new quest with its id and today's date", () => {
+    const api = makeApi();
+    const { store } = setup("2026-09-01", api);
+
+    store.getState().addQuest(input);
+
+    expect(api.addQuest).toHaveBeenCalledWith(input, store.getState().quests[0].id, "2026-09-01");
+  });
+
+  it("sends a check-in once, and not for an ignored repeat", () => {
+    const api = makeApi();
+    const { store } = setup("2026-09-01", api);
+    store.getState().addQuest(input);
+    const id = store.getState().quests[0].id;
+
+    store.getState().checkInQuest(id);
+    store.getState().checkInQuest(id);
+
+    expect(api.checkIn).toHaveBeenCalledTimes(1);
+    expect(api.checkIn).toHaveBeenCalledWith(id, "2026-09-01");
+  });
+
+  it("refreshes from the server when a save fails", async () => {
+    const api = makeApi({ checkIn: vi.fn().mockRejectedValue(new Error("nope")) });
+    const { store } = setup("2026-09-01", api);
+    store.getState().addQuest(input);
+    const saved = store.getState().quests[0]; // what the server still has
+    vi.mocked(api.load).mockResolvedValue({ quests: [saved], restores: 0, trophies: {} });
+
+    store.getState().checkInQuest(saved.id);
+    expect(store.getState().quests[0].checkIns).toHaveLength(1); // optimistic
+
+    await vi.waitFor(() => expect(store.getState().toast?.message).toMatch(/refreshed/i));
+    expect(store.getState().quests[0].checkIns).toEqual([]);
+  });
+
+  it("rolls back to the earlier state when the refresh fails too", async () => {
+    const api = makeApi({
+      checkIn: vi.fn().mockRejectedValue(new Error("offline")),
+      load: vi.fn().mockRejectedValue(new Error("offline")),
+    });
+    const { store } = setup("2026-09-01", api);
+    store.getState().addQuest(input);
+    const id = store.getState().quests[0].id;
+
+    store.getState().checkInQuest(id);
+
+    await vi.waitFor(() => expect(store.getState().toast?.message).toMatch(/connection/i));
+    expect(store.getState().quests[0].checkIns).toEqual([]);
   });
 });
