@@ -4,7 +4,7 @@ export function TrophyButton({ onClick }: { onClick: () => void }) {
       type="button"
       aria-label="Open trophies"
       onClick={onClick}
-      className="fixed top-4 right-4 z-20 grid size-11 place-items-center rounded-full bg-white shadow-md transition hover:scale-105"
+      className="fixed top-8 right-6 z-20 grid size-11 place-items-center rounded-full border border-zinc-200 bg-white transition hover:bg-zinc-50"
     >
       <svg
         viewBox="0 0 24 24"

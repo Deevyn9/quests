@@ -44,7 +44,7 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
       <div
         aria-hidden
         onClick={onClose}
-        className={`fixed inset-0 z-40 bg-slate-900/30 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-40 bg-zinc-900/10 backdrop-blur-sm transition-opacity duration-300 ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
@@ -54,8 +54,8 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
         aria-label="Trophies and completed quests"
         aria-hidden={!open}
         inert={!open}
-        className={`fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-white shadow-xl transition-transform duration-300 ease-out ${
-          open ? "translate-x-0" : "translate-x-full"
+        className={`fixed top-3 right-3 bottom-3 z-50 flex w-[calc(100%-1.5rem)] max-w-sm flex-col rounded-xl border border-zinc-200 bg-white transition-transform duration-300 ease-out ${
+          open ? "translate-x-0" : "translate-x-[calc(100%+1.5rem)]"
         }`}
       >
         <div className="flex items-center justify-between px-5 pt-5">
@@ -65,7 +65,7 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
             type="button"
             aria-label="Close trophies"
             onClick={onClose}
-            className="grid size-9 place-items-center rounded-full text-lg hover:bg-slate-100"
+            className="grid size-9 place-items-center rounded-full text-lg hover:bg-zinc-100"
           >
             ×
           </button>
@@ -83,8 +83,8 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
               onClick={() => setTab(t.id)}
               className={`rounded-full px-4 py-1.5 text-sm transition ${
                 tab === t.id
-                  ? "bg-slate-900 text-white"
-                  : "bg-slate-100 hover:bg-slate-200"
+                  ? "bg-zinc-900 text-white"
+                  : "bg-zinc-100 hover:bg-zinc-200"
               }`}
             >
               {t.label}
@@ -109,7 +109,7 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
               inert={tab !== "trophies"}
               className="h-full w-1/2 overflow-y-auto px-5 pb-8"
             >
-              <p className="mb-3 text-sm text-slate-500">
+              <p className="mb-3 text-sm text-zinc-500">
                 {earnedCount} of {TROPHIES.length} earned
               </p>
               <ul className="flex flex-col gap-3">
@@ -120,13 +120,13 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
                       key={t.key}
                       className={`rounded-xl border p-4 ${
                         earnedOn
-                          ? "border-amber-300 bg-amber-50"
-                          : "border-slate-200 opacity-60"
+                          ? "border-zinc-300 bg-zinc-50"
+                          : "border-zinc-200 opacity-60"
                       }`}
                     >
                       <p className="font-medium">{t.title}</p>
-                      <p className="text-sm text-slate-500">{t.description}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="text-sm text-zinc-500">{t.description}</p>
+                      <p className="mt-1 text-xs text-zinc-500">
                         {earnedOn ? `Earned ${earnedOn}` : "Locked"}
                       </p>
                     </li>
@@ -144,7 +144,7 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
               className="h-full w-1/2 overflow-y-auto px-5 pb-8"
             >
               {completed.length === 0 ? (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-zinc-500">
                   No completed quests yet. Finish a fixed quest and it will show
                   up here.
                 </p>
@@ -153,10 +153,10 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
                   {completed.map((q) => (
                     <li
                       key={q.id}
-                      className="rounded-xl border border-emerald-200 bg-emerald-50 p-4"
+                      className="rounded-xl border border-zinc-200 p-4"
                     >
                       <p className="font-medium">{q.title}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-zinc-500">
                         {q.checkIns.length} check-ins · finished {finishedOn(q)}
                       </p>
                     </li>
