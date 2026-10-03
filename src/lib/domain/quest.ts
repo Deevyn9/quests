@@ -15,46 +15,69 @@ export function isSkipped(q: Quest, day: DateKey): boolean {
   return q.skipWeekdays.includes(weekdayOf(day)) || q.skippedDates.includes(day);
 }
 
+export function isPaused(q: Quest, day: DateKey): boolean {
+  return (q.pausedFrom !== null && day >= q.pausedFrom) || q.pausedDates.includes(day);
+}
+
+// A day that is neither required nor missed.
+function isOff(q: Quest, day: DateKey): boolean {
+  return isSkipped(q, day) || isPaused(q, day);
+}
+
 function lastCovered(q: Quest): DateKey {
   const days = [...coveredDays(q)].sort();
   return days.length ? days[days.length - 1] : addDays(q.startDate, -1);
 }
 
-// Skipped days are bridged: they neither add to the streak nor break it.
+// Off days are bridged: they neither add to the streak nor break it.
 function streakOf(q: Quest): number {
   const covered = coveredDays(q);
   let cursor = lastCovered(q);
   let streak = 0;
   while (cursor >= q.startDate) {
     if (covered.has(cursor)) streak++;
-    else if (!isSkipped(q, cursor)) break;
+    else if (!isOff(q, cursor)) break;
     cursor = addDays(cursor, -1);
   }
   return streak;
 }
 
-// Days after the last covered day and before today that were NOT skipped.
+// Days after the last covered day and before today that were not off days.
 function missedDayList(q: Quest, today: DateKey): DateKey[] {
-  const last = lastCovered(q);
   const missed: DateKey[] = [];
-  for (let d = addDays(last, 1); d < today; d = addDays(d, 1)) {
-    if (!isSkipped(q, d)) missed.push(d);
+  for (let d = addDays(lastCovered(q), 1); d < today; d = addDays(d, 1)) {
+    if (!isOff(q, d)) missed.push(d);
   }
   return missed;
 }
 
+// The calendar days a fixed quest runs over. Held days don't use up the length.
+// While on hold the window is shorter than the quest, until it is resumed.
+export function windowDays(q: Quest): DateKey[] {
+  if (q.kind !== "fixed" || q.durationDays === null) return [];
+  const days: DateKey[] = [];
+  let d = q.startDate;
+  while (days.length < q.durationDays) {
+    if (q.pausedFrom !== null && d >= q.pausedFrom) break;
+    if (!q.pausedDates.includes(d)) days.push(d);
+    d = addDays(d, 1);
+  }
+  return days;
+}
+
 function isCompleted(q: Quest): boolean {
   if (q.kind !== "fixed" || q.durationDays === null) return false;
+  const days = windowDays(q);
+  if (days.length < q.durationDays) return false; // still has held days to make up
   const covered = coveredDays(q);
-  const scheduled = Array.from({ length: q.durationDays }, (_, i) =>
-    addDays(q.startDate, i),
-  ).filter((d) => !isSkipped(q, d));
+  const scheduled = days.filter((d) => !isSkipped(q, d));
   return scheduled.length > 0 && scheduled.every((d) => covered.has(d));
 }
 
 export function getStatus(q: Quest, today: DateKey): QuestStatus {
   const streak = streakOf(q);
   if (isCompleted(q)) return { state: "completed", streak };
+  if (q.pausedFrom !== null && today >= q.pausedFrom) return { state: "paused", streak };
 
   const missedDays = missedDayList(q, today).length;
   if (missedDays === 0) return { state: "active", streak };
@@ -80,6 +103,22 @@ export function skipDay(q: Quest, day: DateKey, today: DateKey): Quest {
   return { ...q, skippedDates: [...q.skippedDates, day] };
 }
 
+export function holdQuest(q: Quest, today: DateKey): Quest {
+  if (getStatus(q, today).state !== "active") {
+    throw new Error("Only an active quest can be put on hold");
+  }
+  // Already checked in today? The hold starts tomorrow, so today's check-in stands.
+  const from = coveredDays(q).has(today) ? addDays(today, 1) : today;
+  return { ...q, pausedFrom: from };
+}
+
+export function resumeQuest(q: Quest, today: DateKey): Quest {
+  if (q.pausedFrom === null) throw new Error("Quest is not on hold");
+  const held: DateKey[] = [];
+  for (let d = q.pausedFrom; d < today; d = addDays(d, 1)) held.push(d);
+  return { ...q, pausedFrom: null, pausedDates: [...q.pausedDates, ...held] };
+}
+
 export function restoreQuest(
   q: Quest,
   today: DateKey,
@@ -96,7 +135,15 @@ export function restoreQuest(
 }
 
 export function restartQuest(q: Quest, today: DateKey): Quest {
-  return { ...q, startDate: today, checkIns: [], restoredDates: [], skippedDates: [] };
+  return {
+    ...q,
+    startDate: today,
+    checkIns: [],
+    restoredDates: [],
+    skippedDates: [],
+    pausedFrom: null,
+    pausedDates: [],
+  };
 }
 
 // Call this with the quest as it is *after* checkIn().

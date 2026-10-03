@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays } from "./dates";
+import { makeQuest as make } from "./fixtures";
 import {
   checkIn,
   getStatus,
@@ -8,20 +9,6 @@ import {
   restoresEarnedOnCheckIn,
   skipDay,
 } from "./quest";
-import type { Quest } from "./types";
-
-const make = (o: Partial<Quest> = {}): Quest => ({
-  id: "q1",
-  title: "Read",
-  kind: "fixed",
-  durationDays: 7,
-  startDate: "2026-09-01",
-  checkIns: [],
-  restoredDates: [],
-  skipWeekdays: [],
-  skippedDates: [],
-  ...o,
-});
 
 const run = (start: string, n: number) =>
   Array.from({ length: n }, (_, i) => addDays(start, i));

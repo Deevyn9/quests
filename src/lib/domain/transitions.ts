@@ -87,6 +87,22 @@ export function restartQuest(state: AppState, id: string, today: DateKey): Trans
   );
 }
 
+export function holdQuest(state: AppState, id: string, today: DateKey): Transition {
+  const updated = domain.holdQuest(find(state, id), today);
+  return {
+    state: { ...state, quests: replace(state.quests, updated) },
+    message: "Quest on hold",
+  };
+}
+
+export function resumeQuest(state: AppState, id: string, today: DateKey): Transition {
+  const updated = domain.resumeQuest(find(state, id), today);
+  return {
+    state: { ...state, quests: replace(state.quests, updated) },
+    message: "Welcome back. Quest resumed",
+  };
+}
+
 export function deleteQuest(state: AppState, id: string): Transition {
   return {
     state: { ...state, quests: state.quests.filter((q) => q.id !== id) },

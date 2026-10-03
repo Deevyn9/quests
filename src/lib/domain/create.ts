@@ -33,6 +33,8 @@ export function createQuest(input: NewQuestInput, today: DateKey, id: string): Q
     restoredDates: [],
     skipWeekdays,
     skippedDates: [],
+    pausedFrom: null,
+    pausedDates: [],
   };
 
   if (input.kind === "infinite") return quest;

@@ -10,5 +10,7 @@ export const makeQuest = (o: Partial<Quest> = {}): Quest => ({
   restoredDates: [],
   skipWeekdays: [],
   skippedDates: [],
+  pausedFrom: null,
+  pausedDates: [],
   ...o,
 });

@@ -19,6 +19,12 @@ export function weekdayOf(key: DateKey): number {
   return new Date(toUtcMs(key)).getUTCDay(); // 0 = Sunday
 }
 
+export const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export function weekdayShort(key: DateKey): string {
+  return WEEKDAY_SHORT[weekdayOf(key)];
+}
+
 // "What day is it for this user?" The server's clock is never used.
 export function todayIn(timeZone: string, now: Date = new Date()): DateKey {
   return new Intl.DateTimeFormat("en-CA", { timeZone }).format(now);
