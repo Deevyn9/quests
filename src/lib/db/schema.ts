@@ -35,6 +35,8 @@ export const quests = pgTable(
     durationDays: integer("duration_days"), // null when infinite
     startDate: date("start_date", { mode: "string" }).notNull(),
     skipWeekdays: integer("skip_weekdays").array().notNull().default([]),
+    pausedFrom: date("paused_from", { mode: "string" }), // set while the quest is on hold
+    pausedDates: date("paused_dates", { mode: "string" }).array().notNull().default([]),
     lastActivityAt: timestamp("last_activity_at").notNull().defaultNow(), // drives list order
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },

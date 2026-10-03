@@ -26,7 +26,15 @@ function dayMap(q: Quest): Map<DateKey, DayKind> {
 }
 
 const rowFields = (q: Quest) =>
-  JSON.stringify([q.title, q.kind, q.durationDays, q.startDate, q.skipWeekdays]);
+  JSON.stringify([
+    q.title,
+    q.kind,
+    q.durationDays,
+    q.startDate,
+    q.skipWeekdays,
+    q.pausedFrom,
+    q.pausedDates,
+  ]);
 
 export function diffState(before: AppState, after: AppState): Changes {
   const changes: Changes = {

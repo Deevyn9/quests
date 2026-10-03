@@ -1,6 +1,6 @@
-import type { Quest } from "@/lib/domain/types"
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { AppState, Transition } from "@/lib/domain/transitions";
+import type { Quest } from "@/lib/domain/types";
 import { diffState, type Changes, type DayKind } from "./diff";
 import { db } from "./index";
 import { questDays, quests, trophies, users } from "./schema";
@@ -53,6 +53,8 @@ export async function loadState(ex: Executor, userId: string): Promise<AppState>
         restoredDates: pick("restored"),
         skipWeekdays: q.skipWeekdays,
         skippedDates: pick("skipped"),
+        pausedFrom: q.pausedFrom,
+        pausedDates: q.pausedDates,
       };
     }),
     restores: user?.restores ?? 0,
@@ -71,6 +73,8 @@ async function saveChanges(ex: Executor, userId: string, c: Changes, now: Date) 
         durationDays: q.durationDays,
         startDate: q.startDate,
         skipWeekdays: q.skipWeekdays,
+        pausedFrom: q.pausedFrom,
+        pausedDates: q.pausedDates,
         lastActivityAt: now,
       })),
     );
@@ -85,6 +89,8 @@ async function saveChanges(ex: Executor, userId: string, c: Changes, now: Date) 
         durationDays: q.durationDays,
         startDate: q.startDate,
         skipWeekdays: q.skipWeekdays,
+        pausedFrom: q.pausedFrom,
+        pausedDates: q.pausedDates,
       })
       .where(and(eq(quests.id, q.id), eq(quests.userId, userId)));
   }

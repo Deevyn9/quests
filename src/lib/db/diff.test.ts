@@ -63,6 +63,12 @@ describe("diffState", () => {
     });
   });
 
+  it("updates the quest row when it is put on hold", () => {
+    const before = makeQuest();
+    const after = makeQuest({ pausedFrom: "2026-09-02" });
+    expect(diffState(state([before]), state([after]))).toEqual({ ...NONE, updateQuests: [after] });
+  });
+
   it("deletes a quest", () => {
     expect(diffState(state([makeQuest()]), state())).toEqual({ ...NONE, deleteQuestIds: ["q1"] });
   });
