@@ -9,6 +9,8 @@ const makeApi = (over: Partial<QuestApi> = {}): QuestApi => ({
   checkIn: vi.fn().mockResolvedValue(undefined),
   restore: vi.fn().mockResolvedValue(undefined),
   restart: vi.fn().mockResolvedValue(undefined),
+  hold: vi.fn().mockResolvedValue(undefined),
+  resume: vi.fn().mockResolvedValue(undefined),
   remove: vi.fn().mockResolvedValue(undefined),
   load: vi.fn().mockResolvedValue({ quests: [], restores: 0, trophies: {} }),
   ...over,
@@ -199,5 +201,32 @@ describe("saving to the server", () => {
 
     await vi.waitFor(() => expect(store.getState().toast?.message).toMatch(/connection/i));
     expect(store.getState().quests[0].checkIns).toEqual([]);
+  });
+});
+
+describe("holding", () => {
+  it("puts a quest on hold and resumes it", () => {
+    const { store } = setup();
+    store.getState().addQuest(input);
+    const id = store.getState().quests[0].id;
+
+    store.getState().holdQuest(id);
+    expect(getStatus(store.getState().quests[0], "2026-09-01").state).toBe("paused");
+
+    store.getState().resumeQuest(id);
+    expect(getStatus(store.getState().quests[0], "2026-09-01").state).toBe("active");
+  });
+
+  it("sends hold and resume to the server", () => {
+    const api = makeApi();
+    const { store } = setup("2026-09-01", api);
+    store.getState().addQuest(input);
+    const id = store.getState().quests[0].id;
+
+    store.getState().holdQuest(id);
+    store.getState().resumeQuest(id);
+
+    expect(api.hold).toHaveBeenCalledWith(id, "2026-09-01");
+    expect(api.resume).toHaveBeenCalledWith(id, "2026-09-01");
   });
 });

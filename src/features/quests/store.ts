@@ -13,6 +13,8 @@ export type QuestApi = {
   checkIn: (id: string, today: DateKey) => Promise<void>;
   restore: (id: string, today: DateKey) => Promise<void>;
   restart: (id: string, today: DateKey) => Promise<void>;
+  hold: (id: string, today: DateKey) => Promise<void>;
+  resume: (id: string, today: DateKey) => Promise<void>;
   remove: (id: string) => Promise<void>;
   load: () => Promise<AppState>;
 };
@@ -27,6 +29,8 @@ export type QuestState = AppState & {
   checkInQuest: (id: string) => void;
   restoreStreak: (id: string) => void;
   restartQuest: (id: string) => void;
+  holdQuest: (id: string) => void;
+  resumeQuest: (id: string) => void;
   deleteQuest: (id: string) => void;
   dismissToast: () => void;
 };
@@ -115,6 +119,22 @@ export const createQuestStore = (today: () => DateKey = browserToday, initialApi
         tryApply(
           (s) => moves.restartQuest(s, id, now),
           (server) => server.restart(id, now),
+        );
+      },
+
+      holdQuest: (id) => {
+        const now = today();
+        tryApply(
+          (s) => moves.holdQuest(s, id, now),
+          (server) => server.hold(id, now),
+        );
+      },
+
+      resumeQuest: (id) => {
+        const now = today();
+        tryApply(
+          (s) => moves.resumeQuest(s, id, now),
+          (server) => server.resume(id, now),
         );
       },
 

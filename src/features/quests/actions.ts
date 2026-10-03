@@ -75,6 +75,24 @@ export async function restartAction(id: string, today: string) {
   });
 }
 
+export async function holdAction(id: string, today: string) {
+  return run(async () => {
+    const userId = await requireUserId();
+    assertId(id);
+    assertPlausibleDay(today);
+    await mutateState(userId, (s) => moves.holdQuest(s, id, today));
+  });
+}
+
+export async function resumeAction(id: string, today: string) {
+  return run(async () => {
+    const userId = await requireUserId();
+    assertId(id);
+    assertPlausibleDay(today);
+    await mutateState(userId, (s) => moves.resumeQuest(s, id, today));
+  });
+}
+
 export async function deleteAction(id: string) {
   return run(async () => {
     const userId = await requireUserId();

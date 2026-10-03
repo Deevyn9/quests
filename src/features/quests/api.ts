@@ -10,6 +10,8 @@ export const serverApi: QuestApi = {
   checkIn: async (id, today) => unwrap(await actions.checkInAction(id, today)),
   restore: async (id, today) => unwrap(await actions.restoreAction(id, today)),
   restart: async (id, today) => unwrap(await actions.restartAction(id, today)),
+  hold: async (id, today) => unwrap(await actions.holdAction(id, today)),
+  resume: async (id, today) => unwrap(await actions.resumeAction(id, today)),
   remove: async (id) => unwrap(await actions.deleteAction(id)),
   load: () => actions.loadAction(),
 };
