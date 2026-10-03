@@ -19,26 +19,29 @@ afterEach(cleanup);
 
 const noop = async () => {};
 
-function renderApp(user: { name: string | null } | null = { name: "Ada" }) {
+function renderApp(
+  user: { name: string | null } | null = { name: "Ada Lovelace" },
+) {
   return render(
     <AppShell user={user} signInAction={noop} signOutAction={noop} />,
   );
 }
 
-async function createQuest(
-  user: ReturnType<typeof userEvent.setup>,
-  name: string,
-) {
+type User = ReturnType<typeof userEvent.setup>;
+
+async function createQuest(user: User, name: string) {
   await user.click(screen.getByRole("button", { name: /new quest/i }));
   await user.type(screen.getByLabelText(/quest name/i), name);
   await user.click(screen.getByRole("button", { name: /create quest/i }));
 }
 
 describe("AppShell (signed in)", () => {
-  it("shows the page heading and the user's name", () => {
+  it("titles the page with the user's first name and shows their streak restores", () => {
     renderApp();
-    expect(screen.getByRole("heading", { name: "Quests" })).toBeInTheDocument();
-    expect(screen.getByText("Ada")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Ada's quests" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/streak restore: 0/i)).toBeInTheDocument();
   });
 
   it("has a new quest button, a trophy button and a sign out button", () => {
@@ -67,13 +70,15 @@ describe("AppShell (signed in)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("creates a quest from the modal and lists it", async () => {
+  it("creates a quest and shows its length and progress", async () => {
     const user = userEvent.setup();
     renderApp();
 
     await createQuest(user, "Read 10 pages");
 
     expect(screen.getByText("Read 10 pages")).toBeInTheDocument();
+    expect(screen.getByText("7 days")).toBeInTheDocument();
+    expect(screen.getByText("Day 1 of 7")).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(
       screen.queryByText(/no quests at the moment/i),
@@ -102,6 +107,63 @@ describe("AppShell (signed in)", () => {
     expect(
       screen.queryByRole("button", { name: /check in today/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("removes a finished one-day quest from the list", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(screen.getByRole("button", { name: /new quest/i }));
+    await user.type(screen.getByLabelText(/quest name/i), "Jump");
+    await user.click(screen.getByRole("button", { name: "Day" }));
+    await user.click(screen.getByRole("button", { name: /create quest/i }));
+    await user.click(screen.getByRole("button", { name: /check in today/i }));
+
+    expect(screen.queryByRole("article")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/quest complete/i);
+  });
+
+  it("deletes a quest after confirming", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await createQuest(user, "Read 10 pages");
+
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    const dialog = screen.getByRole("dialog", { name: /delete quest/i });
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    expect(screen.queryByText("Read 10 pages")).not.toBeInTheDocument();
+    expect(screen.getByText(/no quests at the moment/i)).toBeInTheDocument();
+  });
+
+  it("keeps the quest when deleting is cancelled", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await createQuest(user, "Read 10 pages");
+
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    const dialog = screen.getByRole("dialog", { name: /delete quest/i });
+    await user.click(within(dialog).getByRole("button", { name: /cancel/i }));
+
+    expect(screen.getByText("Read 10 pages")).toBeInTheDocument();
+  });
+
+  it("puts a quest on hold and resumes it", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await createQuest(user, "Read 10 pages");
+
+    await user.click(screen.getByRole("button", { name: /put on hold/i }));
+    expect(screen.getByText("On hold")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /check in today/i }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /resume/i }));
+    expect(screen.queryByText("On hold")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /check in today/i }),
+    ).toBeInTheDocument();
   });
 
   it("opens the trophy panel from the trophy button", async () => {
@@ -145,10 +207,11 @@ describe("AppShell (signed in)", () => {
 });
 
 describe("AppShell (signed out)", () => {
-  it("offers Google sign-in instead of the quest list", () => {
+  it("offers sign-in in place of the new quest button", () => {
     renderApp(null);
+    expect(screen.getByRole("heading", { name: "Quests" })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /continue with google/i }),
+      screen.getByRole("button", { name: /sign in to create quests/i }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /new quest/i }),

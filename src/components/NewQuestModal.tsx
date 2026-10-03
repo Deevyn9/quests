@@ -33,6 +33,15 @@ function durationFor(
   return PRESET_DAYS[timeframe];
 }
 
+const colors = (active: boolean) =>
+  active ? "bg-zinc-900 text-white" : "bg-zinc-100 hover:bg-zinc-200";
+
+const pill = (active: boolean) =>
+  `rounded-full px-3 py-1 text-sm transition ${colors(active)}`;
+
+const dayChip = (active: boolean) =>
+  `grid size-9 place-items-center rounded-full text-sm transition ${colors(active)}`;
+
 export function NewQuestModal({
   open,
   onClose,
@@ -82,14 +91,9 @@ function ModalBody({ onClose }: { onClose: () => void }) {
     }
   }
 
-  const chip = (active: boolean) =>
-    `rounded-full px-3 py-1 text-sm transition ${
-      active ? "bg-slate-900 text-white" : "bg-slate-100 hover:bg-slate-200"
-    }`;
-
   return (
     <div
-      className="fixed inset-0 z-40 grid place-items-center bg-slate-900/40 p-4"
+      className="fixed inset-0 z-40 grid place-items-center bg-zinc-900/10 p-4 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -98,7 +102,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="new-quest-heading"
-        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+        className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6"
       >
         <h2 id="new-quest-heading" className="text-xl font-semibold">
           New quest
@@ -115,7 +119,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Read 10 pages"
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900"
+              className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-900"
             />
           </div>
 
@@ -128,7 +132,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
                   type="button"
                   aria-pressed={timeframe === t.id}
                   onClick={() => setTimeframe(t.id)}
-                  className={chip(timeframe === t.id)}
+                  className={pill(timeframe === t.id)}
                 >
                   {t.label}
                 </button>
@@ -142,7 +146,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
                 aria-label="Number of days"
                 value={customDays}
                 onChange={(e) => setCustomDays(e.target.value)}
-                className="w-28 rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-900"
+                className="w-28 rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-900"
               />
             )}
           </div>
@@ -157,7 +161,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
                   aria-label={name}
                   aria-pressed={skipDays.includes(day)}
                   onClick={() => toggleDay(day)}
-                  className={`size-9 ${chip(skipDays.includes(day))} !px-0`}
+                  className={dayChip(skipDays.includes(day))}
                 >
                   {name[0]}
                 </button>
@@ -175,13 +179,13 @@ function ModalBody({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full px-4 py-2 text-sm hover:bg-slate-100"
+              className="rounded-full px-4 py-2 text-sm hover:bg-zinc-100"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white hover:bg-slate-700"
+              className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700"
             >
               Create quest
             </button>
