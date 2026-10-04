@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, daysBetween, todayIn, weekdayOf } from "./dates";
+import { addDays, daysBetween, formatDay, todayIn, weekdayOf } from "./dates";
 
 describe("dates", () => {
   it("adds days across a month boundary", () => {
@@ -13,6 +13,11 @@ describe("dates", () => {
   it("finds the weekday", () => {
     expect(weekdayOf("2026-09-06")).toBe(0); // Sunday
     expect(weekdayOf("2026-09-01")).toBe(2); // Tuesday
+  });
+
+  it("formats a day for display", () => {
+    expect(formatDay("2026-09-01")).toBe("1 Sep 2026");
+    expect(formatDay("2026-12-25")).toBe("25 Dec 2026");
   });
 
   it("resolves 'today' in the user's timezone, not the server's", () => {

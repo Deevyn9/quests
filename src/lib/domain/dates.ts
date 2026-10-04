@@ -25,6 +25,14 @@ export function weekdayShort(key: DateKey): string {
   return WEEKDAY_SHORT[weekdayOf(key)];
 }
 
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// "2026-09-01" -> "1 Sep 2026". Built by hand so it never depends on locale or timezone.
+export function formatDay(key: DateKey): string {
+  const [y, m, d] = key.split("-").map(Number);
+  return `${d} ${MONTH_SHORT[m - 1]} ${y}`;
+}
+
 // "What day is it for this user?" The server's clock is never used.
 export function todayIn(timeZone: string, now: Date = new Date()): DateKey {
   return new Intl.DateTimeFormat("en-CA", { timeZone }).format(now);

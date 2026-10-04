@@ -1,6 +1,6 @@
 import { infiniteDays } from "./boxes";
 import { WEEKDAY_SHORT } from "./dates";
-import { windowDays } from "./quest";
+import { isSkipped, longestStreak, windowDays } from "./quest";
 import type { DateKey, Quest, QuestStatus } from "./types";
 
 const MONDAY_FIRST = [1, 2, 3, 4, 5, 6, 0];
@@ -22,6 +22,10 @@ export function toneFor(status: QuestStatus, restores: number): Tone {
     default:
       return "normal";
   }
+}
+
+export function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
 
 export function lengthLabel(q: Quest): string {
@@ -47,4 +51,32 @@ export function progressLabel(q: Quest, today: DateKey): string {
 export function titleFor(name: string | null): string {
   const first = name?.trim().split(/\s+/)[0];
   return first ? `${first}'s quests` : "My quests";
+}
+
+export type CompletedSummary = {
+  length: string;
+  skips: string | null;
+  started: DateKey;
+  finished: DateKey;
+  checkIns: number;
+  restoredDays: number;
+  heldDays: number;
+  skippedDays: number;
+  bestStreak: number;
+};
+
+// Everything the "Completed quests" list shows about a finished quest.
+export function summarizeCompleted(q: Quest): CompletedSummary {
+  const covered = [...q.checkIns, ...q.restoredDates].sort();
+  return {
+    length: lengthLabel(q),
+    skips: skipLabel(q),
+    started: q.startDate,
+    finished: covered[covered.length - 1] ?? q.startDate,
+    checkIns: q.checkIns.length,
+    restoredDays: q.restoredDates.length,
+    heldDays: q.pausedDates.length,
+    skippedDays: windowDays(q).filter((d) => isSkipped(q, d)).length,
+    bestStreak: longestStreak(q),
+  };
 }

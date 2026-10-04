@@ -9,15 +9,21 @@ describe("holdQuest", () => {
     expect(getStatus(held, "2026-09-05")).toEqual({ state: "paused", streak: 1 });
   });
 
-  it("starts tomorrow when today is already checked in", () => {
+  it("starts tomorrow when today is already checked in, but shows as on hold straight away", () => {
     const held = holdQuest(makeQuest({ checkIns: ["2026-09-01"] }), "2026-09-01");
     expect(held.pausedFrom).toBe("2026-09-02");
-    expect(getStatus(held, "2026-09-01")).toEqual({ state: "active", streak: 1 });
+    expect(held.checkIns).toEqual(["2026-09-01"]); // today's check-in stands
+    expect(getStatus(held, "2026-09-01")).toEqual({ state: "paused", streak: 1 });
   });
 
   it("refuses to hold a broken quest", () => {
     const q = makeQuest({ checkIns: ["2026-09-01"] });
     expect(() => holdQuest(q, "2026-09-03")).toThrow();
+  });
+
+  it("refuses to hold a quest that is already on hold", () => {
+    const held = holdQuest(makeQuest({ checkIns: ["2026-09-01"] }), "2026-09-01");
+    expect(() => holdQuest(held, "2026-09-01")).toThrow();
   });
 
   it("blocks check-ins while on hold", () => {
@@ -42,6 +48,15 @@ describe("resumeQuest", () => {
 
     const next = checkIn(resumed, "2026-09-06");
     expect(getStatus(next, "2026-09-06")).toEqual({ state: "active", streak: 2 });
+  });
+
+  it("cancels a hold that has not started yet", () => {
+    const held = holdQuest(makeQuest({ checkIns: ["2026-09-01"] }), "2026-09-01");
+    const resumed = resumeQuest(held, "2026-09-01");
+
+    expect(resumed.pausedFrom).toBeNull();
+    expect(resumed.pausedDates).toEqual([]);
+    expect(getStatus(resumed, "2026-09-01")).toEqual({ state: "active", streak: 1 });
   });
 
   it("rejects resuming a quest that is not on hold", () => {
