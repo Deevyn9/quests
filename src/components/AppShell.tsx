@@ -8,6 +8,7 @@ import { getStatus } from "@/lib/domain/quest";
 import { Cloud } from "./Cloud";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { EmptyState } from "./EmptyState";
+import { RestoreIcon } from "./Icons";
 import { NewQuestModal } from "./NewQuestModal";
 import { QuestCard } from "./QuestCard";
 import { SignInPrompt } from "./SignInPrompt";
@@ -65,7 +66,8 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
           </div>
           {user && (
             <>
-              <p className="mt-1 text-sm text-zinc-500">
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-zinc-500">
+                <RestoreIcon className="size-4" />
                 Streak restore: {restores}
               </p>
               <button

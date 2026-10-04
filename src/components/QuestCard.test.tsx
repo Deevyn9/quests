@@ -38,10 +38,20 @@ describe("QuestCard colours", () => {
   it("is blue while on hold", () => {
     show("2026-09-03", 0, { pausedFrom: "2026-09-02" });
     expect(screen.getByRole("article")).toHaveClass(
-      "border-blue-300",
-      "bg-blue-50",
+      "border-blue-400",
+      "bg-blue-100",
     );
     expect(screen.getByText("On hold")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Resume" })).toBeInTheDocument();
+  });
+
+  it("is blue straight away when the hold starts tomorrow", () => {
+    show("2026-09-01", 0, { pausedFrom: "2026-09-02" });
+    expect(screen.getByRole("article")).toHaveClass(
+      "border-blue-400",
+      "bg-blue-100",
+    );
+    expect(screen.getByText("On hold from tomorrow")).toBeInTheDocument();
   });
 
   it("is grey when the streak is broken and a restore is available", () => {
