@@ -8,6 +8,7 @@ type Props = {
   title: string;
   description: string;
   confirmLabel: string;
+  destructive?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -17,6 +18,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  destructive = false,
   onConfirm,
   onCancel,
 }: Props) {
@@ -62,7 +64,11 @@ export function ConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
-            className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700"
+            className={`rounded-full px-5 py-2 text-sm font-medium text-white ${
+              destructive
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-zinc-900 hover:bg-zinc-700"
+            }`}
           >
             {confirmLabel}
           </button>

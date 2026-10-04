@@ -18,14 +18,18 @@ import { FlameIcon, RestoreIcon, SnowflakeIcon } from "./Icons";
 const BOX_BASE =
   "relative grid aspect-square w-full min-w-0 place-items-center rounded-lg border";
 
+// A crossed-off day fades its weekday so the X reads cleanly on top of it.
 const BOX_STYLES: Record<Box["state"], string> = {
-  checked: "border-zinc-300 bg-white text-zinc-400",
+  checked: "border-zinc-300 bg-white text-zinc-300",
   restored: "border-amber-300 bg-amber-50 text-amber-700",
   skipped: "box-skipped border-dashed border-zinc-300 text-zinc-300",
   today: "border-2 border-zinc-900 bg-white text-zinc-900",
   upcoming: "border-zinc-300 bg-white text-zinc-700",
   missed: "border-zinc-300 bg-zinc-200 text-zinc-500",
 };
+
+// On a frozen (blue) card, crossed-off days pick up the blue too.
+const FROZEN_CHECKED = "border-blue-300 bg-white text-blue-200";
 
 const NUMBER_STYLES: Record<Box["state"], string> = {
   checked: "text-zinc-500",
@@ -53,6 +57,9 @@ const TONE_TEXT: Record<Tone, string> = {
 
 const ACTION =
   "inline-flex items-center gap-1.5 rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs font-medium transition hover:bg-zinc-50 disabled:opacity-50";
+
+const DELETE =
+  "inline-flex items-center gap-1.5 rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50";
 
 const RESUME =
   "inline-flex items-center gap-1.5 rounded-full border border-blue-600 bg-blue-600 px-3 py-1 text-xs font-medium text-white transition hover:bg-blue-700";
@@ -85,16 +92,16 @@ function StreakIcon({ status, tone }: { status: QuestStatus; tone: Tone }) {
   return <FlameIcon className={`size-4 ${colour}`} />;
 }
 
-function CrossOut({ animate }: { animate: boolean }) {
+function CrossOut({ animate, colour }: { animate: boolean; colour: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
       aria-hidden
       fill="none"
       stroke="currentColor"
-      strokeWidth="2.5"
+      strokeWidth="2"
       strokeLinecap="round"
-      className={`pointer-events-none absolute inset-0 size-full p-2 text-zinc-900 ${animate ? "x-draw" : ""}`}
+      className={`pointer-events-none absolute inset-0 size-full p-3 ${colour} ${animate ? "x-draw" : ""}`}
     >
       <path className="x-stroke" pathLength="1" d="M4 4L20 20" />
       <path className="x-stroke" pathLength="1" d="M20 4L4 20" />
@@ -105,23 +112,39 @@ function CrossOut({ animate }: { animate: boolean }) {
 type DayCellProps = {
   box: Box;
   today: string;
+  tone: Tone;
   canCheckIn: boolean;
   title: string;
   onCheckIn: () => void;
 };
 
 // The weekday sits centered in the box; the day number sits underneath it.
-function DayCell({ box, today, canCheckIn, title, onCheckIn }: DayCellProps) {
+function DayCell({
+  box,
+  today,
+  tone,
+  canCheckIn,
+  title,
+  onCheckIn,
+}: DayCellProps) {
   const placeholder = box.date === null;
+  const frozenChecked = tone === "frozen" && box.state === "checked";
   const style = placeholder
     ? "border-dashed border-zinc-300 text-zinc-300"
-    : BOX_STYLES[box.state];
+    : frozenChecked
+      ? FROZEN_CHECKED
+      : BOX_STYLES[box.state];
   const numberStyle = placeholder ? "text-zinc-300" : NUMBER_STYLES[box.state];
 
   const face = (
     <>
       <span className="text-sm font-medium">{box.weekday ?? "–"}</span>
-      {box.state === "checked" && <CrossOut animate={box.date === today} />}
+      {box.state === "checked" && (
+        <CrossOut
+          animate={box.date === today}
+          colour={tone === "frozen" ? "text-blue-900" : "text-zinc-800"}
+        />
+      )}
     </>
   );
 
@@ -207,6 +230,7 @@ export function QuestCard({ quest }: { quest: Quest }) {
               key={box.day}
               box={box}
               today={today}
+              tone={tone}
               canCheckIn={canCheckIn}
               title={quest.title}
               onCheckIn={() => checkInQuest(quest.id)}
@@ -280,7 +304,7 @@ export function QuestCard({ quest }: { quest: Quest }) {
           <button
             type="button"
             onClick={() => setConfirmingDelete(true)}
-            className={ACTION}
+            className={DELETE}
           >
             Delete
           </button>
@@ -292,6 +316,7 @@ export function QuestCard({ quest }: { quest: Quest }) {
         title="Delete quest?"
         description={`"${quest.title}" and its progress will be removed. Trophies you've earned stay.`}
         confirmLabel="Delete"
+        destructive
         onConfirm={() => {
           setConfirmingDelete(false);
           deleteQuest(quest.id);

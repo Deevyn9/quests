@@ -87,3 +87,25 @@ describe("QuestCard colours", () => {
     expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
   });
 });
+
+describe("QuestCard details", () => {
+  it("has a red delete button", () => {
+    show("2026-09-01", 0);
+    expect(screen.getByRole("button", { name: "Delete" })).toHaveClass(
+      "border-red-300",
+      "text-red-600",
+    );
+  });
+
+  it("fades the weekday on a crossed-off day", () => {
+    show("2026-09-01", 0);
+    const firstDay = screen.getAllByText("Tue")[0].parentElement;
+    expect(firstDay).toHaveClass("text-zinc-300");
+  });
+
+  it("tints crossed-off days blue while on hold", () => {
+    show("2026-09-03", 0, { pausedFrom: "2026-09-02" });
+    const firstDay = screen.getAllByText("Tue")[0].parentElement;
+    expect(firstDay).toHaveClass("border-blue-300", "text-blue-200");
+  });
+});
