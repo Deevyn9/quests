@@ -7,11 +7,32 @@
 
 html {
   color-scheme: light;
+  /* Keeps the layout from jumping sideways when a dialog hides the scrollbar. */
+  scrollbar-gutter: stable;
 }
 
 body {
   background: #ffffff;
   color: #18181b;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"] {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* Skipped days: diagonal hatching, clearly different from a normal day. */
+.box-skipped {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 4px,
+    #e4e4e7 4px 5px
+  );
 }
 
 /* The X that crosses off a day draws itself in. */

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useQuestStore } from "@/features/quests/store";
+import { useScrollLock } from "@/lib/useScrollLock";
 
 const TIMEFRAMES = [
   { id: "day", label: "Day" },
@@ -55,6 +56,8 @@ export function NewQuestModal({
 }
 
 function ModalBody({ onClose }: { onClose: () => void }) {
+  useScrollLock(true);
+
   const addQuest = useQuestStore((s) => s.addQuest);
   const [title, setTitle] = useState("");
   const [timeframe, setTimeframe] = useState<TimeframeId>("week");
