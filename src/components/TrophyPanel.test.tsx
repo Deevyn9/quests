@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { makeQuest } from "@/lib/domain/fixtures";
 import { TrophyPanel } from "./TrophyPanel";
@@ -20,7 +20,7 @@ describe("TrophyPanel", () => {
       <TrophyPanel {...base} open trophies={{ "first-quest": "2026-09-01" }} />,
     );
     expect(screen.getByText("First Steps")).toBeInTheDocument();
-    expect(screen.getByText("Earned 2026-09-01")).toBeInTheDocument();
+    expect(screen.getByText("Earned 1 Sep 2026")).toBeInTheDocument();
     expect(screen.getAllByText("Locked")).toHaveLength(5);
   });
 
@@ -37,6 +37,26 @@ describe("TrophyPanel", () => {
     await user.click(screen.getByRole("tab", { name: /completed quests/i }));
 
     expect(screen.getByRole("tabpanel")).toHaveTextContent("Read 10 pages");
+  });
+
+  it("shows the details of a completed quest", async () => {
+    const user = userEvent.setup();
+    const quest = makeQuest({
+      title: "Read 10 pages",
+      durationDays: 3,
+      checkIns: ["2026-09-01", "2026-09-02", "2026-09-03"],
+    });
+    render(<TrophyPanel {...base} open completed={[quest]} />);
+
+    await user.click(screen.getByRole("tab", { name: /completed quests/i }));
+
+    const panel = screen.getByRole("tabpanel");
+    expect(within(panel).getByText("3 days")).toBeInTheDocument();
+    expect(
+      within(panel).getByText("1 Sep 2026 → 3 Sep 2026"),
+    ).toBeInTheDocument();
+    expect(within(panel).getByText("3 check-ins")).toBeInTheDocument();
+    expect(within(panel).getByText("Best streak 3")).toBeInTheDocument();
   });
 
   it("explains when nothing has been completed yet", async () => {

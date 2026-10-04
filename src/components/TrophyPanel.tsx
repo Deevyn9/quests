@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { formatDay } from "@/lib/domain/dates";
+import { plural, summarizeCompleted } from "@/lib/domain/describe";
 import { TROPHIES } from "@/lib/domain/trophies";
 import type { DateKey, Quest } from "@/lib/domain/types";
+import { useScrollLock } from "@/lib/useScrollLock";
 
 type Props = {
   open: boolean;
@@ -18,14 +21,45 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "completed", label: "Completed quests" },
 ];
 
-function finishedOn(q: Quest): DateKey {
-  const days = [...q.checkIns, ...q.restoredDates].sort();
-  return days[days.length - 1] ?? q.startDate;
+function Chip({ children }: { children: ReactNode }) {
+  return (
+    <li className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-700">
+      {children}
+    </li>
+  );
+}
+
+function CompletedQuest({ quest }: { quest: Quest }) {
+  const s = summarizeCompleted(quest);
+  return (
+    <li className="rounded-xl border border-zinc-200 p-4">
+      <p className="font-medium">{quest.title}</p>
+      <p className="text-sm text-zinc-500">
+        {[s.length, s.skips].filter(Boolean).join(" · ")}
+      </p>
+      <p className="mt-0.5 text-xs text-zinc-500">
+        {formatDay(s.started)} → {formatDay(s.finished)}
+      </p>
+      <ul className="mt-3 flex flex-wrap gap-1.5">
+        <Chip>{plural(s.checkIns, "check-in")}</Chip>
+        <Chip>Best streak {s.bestStreak}</Chip>
+        {s.restoredDays > 0 && (
+          <Chip>{plural(s.restoredDays, "restored day")}</Chip>
+        )}
+        {s.skippedDays > 0 && (
+          <Chip>{plural(s.skippedDays, "day")} skipped</Chip>
+        )}
+        {s.heldDays > 0 && <Chip>{plural(s.heldDays, "day")} on hold</Chip>}
+      </ul>
+    </li>
+  );
 }
 
 export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
   const [tab, setTab] = useState<Tab>("trophies");
   const closeRef = useRef<HTMLButtonElement>(null);
+
+  useScrollLock(open);
 
   useEffect(() => {
     if (!open) return;
@@ -127,7 +161,7 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
                       <p className="font-medium">{t.title}</p>
                       <p className="text-sm text-zinc-500">{t.description}</p>
                       <p className="mt-1 text-xs text-zinc-500">
-                        {earnedOn ? `Earned ${earnedOn}` : "Locked"}
+                        {earnedOn ? `Earned ${formatDay(earnedOn)}` : "Locked"}
                       </p>
                     </li>
                   );
@@ -151,15 +185,7 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
               ) : (
                 <ul className="flex flex-col gap-3">
                   {completed.map((q) => (
-                    <li
-                      key={q.id}
-                      className="rounded-xl border border-zinc-200 p-4"
-                    >
-                      <p className="font-medium">{q.title}</p>
-                      <p className="text-xs text-zinc-500">
-                        {q.checkIns.length} check-ins · finished {finishedOn(q)}
-                      </p>
-                    </li>
+                    <CompletedQuest key={q.id} quest={q} />
                   ))}
                 </ul>
               )}
