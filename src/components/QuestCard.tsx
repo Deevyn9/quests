@@ -13,8 +13,8 @@ import {
 import { getStatus } from "@/lib/domain/quest";
 import type { Quest, QuestStatus } from "@/lib/domain/types";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { FrostOverlay } from "./FrostOverlay";
 import { FlameIcon, RestoreIcon, SnowflakeIcon } from "./Icons";
-import { SnowBurst } from "./SnowBurst";
 
 const BOX_BASE =
   "relative grid aspect-square w-full min-w-0 place-items-center rounded-lg border transition-colors duration-500";
@@ -44,7 +44,7 @@ const NUMBER_STYLES: Record<Box["state"], string> = {
 // frozen = blue, recoverable = grey, dead = red
 const TONE_CARD: Record<Tone, string> = {
   normal: "border-zinc-200 bg-white",
-  frozen: "border-blue-400 bg-blue-100",
+  frozen: "border-blue-400 bg-blue-200",
   recoverable: "border-zinc-200 bg-zinc-100",
   dead: "border-red-300 bg-red-50",
 };
@@ -226,7 +226,7 @@ export function QuestCard({ quest }: { quest: Quest }) {
     .filter(Boolean)
     .join(" · ");
 
-  // Clicking the card itself (not one of its buttons) replays the snow on a frozen quest.
+  // Clicking the card itself (not one of its buttons) makes the frost form again.
   function handleCardClick(e: MouseEvent<HTMLElement>) {
     if (!onHold) return;
     if ((e.target as HTMLElement).closest("button")) return;
@@ -238,8 +238,10 @@ export function QuestCard({ quest }: { quest: Quest }) {
       onClick={handleCardClick}
       className={`relative flex flex-col gap-4 rounded-xl border p-5 transition-colors duration-500 ${TONE_CARD[tone]}`}
     >
+      {onHold && <FrostOverlay burst={burst} />}
+
       <div
-        className={`flex flex-col gap-4 transition-[opacity,filter] duration-500 ${
+        className={`relative z-10 flex flex-col gap-4 transition-[opacity,filter] duration-500 ${
           tone === "recoverable" ? "opacity-60 grayscale" : ""
         }`}
       >
@@ -277,7 +279,7 @@ export function QuestCard({ quest }: { quest: Quest }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2">
         <div>
           <p
             className={`text-sm transition-colors duration-500 ${TONE_TEXT[tone]}`}
@@ -343,8 +345,6 @@ export function QuestCard({ quest }: { quest: Quest }) {
           </button>
         </div>
       </div>
-
-      {onHold && <SnowBurst burst={burst} />}
 
       <ConfirmDialog
         open={confirmingDelete}

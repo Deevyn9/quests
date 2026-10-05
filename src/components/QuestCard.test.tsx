@@ -25,6 +25,8 @@ function show(
   return render(<QuestCard quest={makeQuest({ ...base, ...over })} />);
 }
 
+const frozen = { pausedFrom: "2026-09-02" };
+
 afterEach(cleanup);
 
 describe("QuestCard colours", () => {
@@ -37,20 +39,20 @@ describe("QuestCard colours", () => {
   });
 
   it("is blue while on hold", () => {
-    show("2026-09-03", 0, { pausedFrom: "2026-09-02" });
+    show("2026-09-03", 0, frozen);
     expect(screen.getByRole("article")).toHaveClass(
       "border-blue-400",
-      "bg-blue-100",
+      "bg-blue-200",
     );
     expect(screen.getByText("On hold")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Resume" })).toBeInTheDocument();
   });
 
   it("is blue straight away when the hold starts tomorrow", () => {
-    show("2026-09-01", 0, { pausedFrom: "2026-09-02" });
+    show("2026-09-01", 0, frozen);
     expect(screen.getByRole("article")).toHaveClass(
       "border-blue-400",
-      "bg-blue-100",
+      "bg-blue-200",
     );
     expect(screen.getByText("On hold from tomorrow")).toBeInTheDocument();
   });
@@ -105,7 +107,7 @@ describe("QuestCard details", () => {
   });
 
   it("tints crossed-off days blue while on hold", () => {
-    show("2026-09-03", 0, { pausedFrom: "2026-09-02" });
+    show("2026-09-03", 0, frozen);
     const firstDay = screen.getAllByText("Tue")[0].parentElement;
     expect(firstDay).toHaveClass("border-blue-300", "text-blue-200");
   });
@@ -127,7 +129,7 @@ describe("QuestCard transitions", () => {
     );
     cleanup();
 
-    show("2026-09-03", 0, { pausedFrom: "2026-09-02" });
+    show("2026-09-03", 0, frozen);
     expect(screen.getByRole("button", { name: "Resume" })).toHaveClass(
       "bg-blue-600",
     );
@@ -137,22 +139,47 @@ describe("QuestCard transitions", () => {
   });
 });
 
-describe("QuestCard snow", () => {
-  it("forms snowflakes on a frozen card", () => {
-    show("2026-09-03", 0, { pausedFrom: "2026-09-02" });
-    expect(
-      screen.getByRole("article").querySelector("[data-snow]"),
-    ).not.toBeNull();
+describe("QuestCard frost", () => {
+  it("covers a frozen card with big snowflakes spread out across it", () => {
+    show("2026-09-03", 0, frozen);
+    const flakes = Array.from(
+      screen
+        .getByRole("article")
+        .querySelectorAll<HTMLElement>("[data-snow] .snowflake"),
+    );
+
+    expect(flakes.length).toBeGreaterThanOrEqual(10);
+    for (const flake of flakes) {
+      expect(parseInt(flake.style.width)).toBeGreaterThanOrEqual(20);
+    }
+    const lefts = new Set(flakes.map((f) => f.style.left));
+    expect(lefts.size).toBeGreaterThanOrEqual(8);
   });
 
-  it("has no snow on a normal card", () => {
+  it("draws white cracks across a frozen card", () => {
+    show("2026-09-03", 0, frozen);
+    const ice = screen.getByRole("article").querySelector("[data-ice]");
+    expect(ice).not.toBeNull();
+    expect(ice?.querySelectorAll(".ice-crack").length).toBeGreaterThan(0);
+  });
+
+  it("has no frost on a normal card", () => {
     show("2026-09-01", 0);
-    expect(screen.getByRole("article").querySelector("[data-snow]")).toBeNull();
+    expect(
+      screen.getByRole("article").querySelector("[data-frost]"),
+    ).toBeNull();
   });
 
-  it("replays the snow when a frozen card is clicked", async () => {
+  it("keeps the frost behind the card's content", () => {
+    show("2026-09-03", 0, frozen);
+    expect(
+      screen.getByRole("article").querySelector("[data-frost]"),
+    ).toHaveClass("z-0");
+  });
+
+  it("makes the frost form again when a frozen card is clicked", async () => {
     const user = userEvent.setup();
-    show("2026-09-03", 0, { pausedFrom: "2026-09-02" });
+    show("2026-09-03", 0, frozen);
     const flake = () =>
       screen.getByRole("article").querySelector("[data-snow] .snowflake");
     const before = flake();

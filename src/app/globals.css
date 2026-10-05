@@ -55,23 +55,67 @@ body {
   }
 }
 
-/* Frozen cards: snowflakes form, drift down and melt away. */
+/* Frozen cards: a frosted white rim, a faint glare across the ice, and white cracks. */
+.ice-frame {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.8),
+    inset 0 0 28px rgb(255 255 255 / 0.65);
+  background-image: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgb(255 255 255 / 0.35) 50%,
+    transparent 62%
+  );
+}
+
+.ice-crack {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.85;
+  animation: ice-in 0.9s ease-out var(--delay, 0s) both;
+}
+@keyframes ice-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.85;
+  }
+}
+
+/* Snowflakes spin in once, then stay put and sway a little. */
 .snowflake {
-  filter: drop-shadow(0 0 1.5px rgb(37 99 235 / 0.7));
-  animation: snow-form var(--dur, 1.8s) ease-out var(--delay, 0s) both;
+  opacity: 0.9;
+  transform: rotate(var(--rot, 0deg));
+  filter: drop-shadow(0 1px 2px rgb(30 64 175 / 0.25));
+  animation:
+    snow-form 0.9s ease-out var(--delay, 0s) both,
+    snow-sway 8s ease-in-out calc(var(--delay, 0s) + 0.9s) infinite;
 }
 @keyframes snow-form {
-  0% {
+  from {
     opacity: 0;
-    transform: translate3d(0, -8px, 0) scale(0.3) rotate(0deg);
+    transform: scale(0.2) rotate(calc(var(--rot, 0deg) - 90deg));
+  }
+  to {
+    opacity: 0.9;
+    transform: scale(1) rotate(var(--rot, 0deg));
+  }
+}
+@keyframes snow-sway {
+  0%,
+  100% {
+    transform: rotate(var(--rot, 0deg));
   }
   25% {
-    opacity: 1;
+    transform: rotate(calc(var(--rot, 0deg) + 5deg));
   }
-  100% {
-    opacity: 0;
-    transform: translate3d(var(--drift, 0px), var(--fall, 60px), 0) scale(1)
-      rotate(var(--spin, 120deg));
+  75% {
+    transform: rotate(calc(var(--rot, 0deg) - 5deg));
   }
 }
 
@@ -88,14 +132,11 @@ body {
   }
 }
 
+/* With reduced motion the frost is still there, it just doesn't animate. */
 @media (prefers-reduced-motion: reduce) {
-  .x-draw .x-stroke {
-    animation: none;
-  }
-  .snowflake {
-    animation: none;
-    opacity: 0;
-  }
+  .x-draw .x-stroke,
+  .snowflake,
+  .ice-crack,
   .fade-in {
     animation: none;
   }
