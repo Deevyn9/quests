@@ -38,10 +38,10 @@ const colors = (active: boolean) =>
   active ? "bg-zinc-900 text-white" : "bg-zinc-100 hover:bg-zinc-200";
 
 const pill = (active: boolean) =>
-  `rounded-full px-4 py-1.5 text-sm transition ${colors(active)}`;
+  `rounded-full px-4 py-1.5 text-sm transition-colors duration-200 ${colors(active)}`;
 
 const dayChip = (active: boolean) =>
-  `grid size-9 place-items-center rounded-full text-sm transition ${colors(active)}`;
+  `grid size-9 place-items-center rounded-full text-sm transition-colors duration-200 ${colors(active)}`;
 
 export function NewQuestModal({
   open,
@@ -64,6 +64,8 @@ function ModalBody({ onClose }: { onClose: () => void }) {
   const [customDays, setCustomDays] = useState("14");
   const [skipDays, setSkipDays] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const customOpen = timeframe === "custom";
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -126,8 +128,8 @@ function ModalBody({ onClose }: { onClose: () => void }) {
             />
           </div>
 
-          <div className="flex flex-col gap-3">
-            <span className="text-sm font-medium">How long?</span>
+          <div className="flex flex-col">
+            <span className="mb-3 text-sm font-medium">How long?</span>
             <div className="flex flex-wrap gap-2.5">
               {TIMEFRAMES.map((t) => (
                 <button
@@ -141,17 +143,31 @@ function ModalBody({ onClose }: { onClose: () => void }) {
                 </button>
               ))}
             </div>
-            {timeframe === "custom" && (
-              <input
-                type="number"
-                min={1}
-                max={365}
-                aria-label="Number of days"
-                value={customDays}
-                onChange={(e) => setCustomDays(e.target.value)}
-                className="mt-1 w-28 rounded-lg border border-zinc-300 px-3.5 py-2.5 outline-none focus:border-zinc-900"
-              />
-            )}
+
+            {/* Always in the form but collapsed; the row height and opacity animate open. */}
+            <div
+              inert={!customOpen}
+              aria-hidden={!customOpen}
+              className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
+                customOpen
+                  ? "grid-rows-[1fr] opacity-100"
+                  : "grid-rows-[0fr] opacity-0"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="pt-3">
+                  <input
+                    type="number"
+                    min={1}
+                    max={365}
+                    aria-label="Number of days"
+                    value={customDays}
+                    onChange={(e) => setCustomDays(e.target.value)}
+                    className="w-28 rounded-lg border border-zinc-300 px-3.5 py-2.5 outline-none focus:border-zinc-900"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col gap-3">
