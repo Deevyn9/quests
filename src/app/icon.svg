@@ -1,13 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <path
-    fill="#60a5fa"
-    d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
-  />
+  <!-- Badge: scaled up so it fills the icon with only a thin margin -->
+  <g transform="translate(12 12) scale(1.15) translate(-12 -12)">
+    <path
+      fill="#60a5fa"
+      d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
+    />
+  </g>
+  <!-- Trophy: smaller and centred, so there's more padding inside the badge -->
   <g
-    transform="translate(5.4 5.4) scale(0.55)"
+    transform="translate(12 12) scale(0.46) translate(-12 -12)"
     fill="none"
     stroke="#ffffff"
-    stroke-width="2.8"
+    stroke-width="3.2"
     stroke-linecap="round"
     stroke-linejoin="round"
   >
