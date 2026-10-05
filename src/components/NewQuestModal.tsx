@@ -38,7 +38,7 @@ const colors = (active: boolean) =>
   active ? "bg-zinc-900 text-white" : "bg-zinc-100 hover:bg-zinc-200";
 
 const pill = (active: boolean) =>
-  `rounded-full px-3 py-1 text-sm transition ${colors(active)}`;
+  `rounded-full px-4 py-1.5 text-sm transition ${colors(active)}`;
 
 const dayChip = (active: boolean) =>
   `grid size-9 place-items-center rounded-full text-sm transition ${colors(active)}`;
@@ -105,14 +105,14 @@ function ModalBody({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="new-quest-heading"
-        className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6"
+        className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-xl border border-zinc-200 bg-white p-7"
       >
         <h2 id="new-quest-heading" className="text-xl font-semibold">
           New quest
         </h2>
 
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-5">
-          <div className="flex flex-col gap-1.5">
+        <form onSubmit={handleSubmit} className="mt-7 flex flex-col gap-8">
+          <div className="flex flex-col gap-2.5">
             <label htmlFor="quest-name" className="text-sm font-medium">
               Quest name
             </label>
@@ -122,13 +122,13 @@ function ModalBody({ onClose }: { onClose: () => void }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Read 10 pages"
-              className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-900"
+              className="rounded-lg border border-zinc-300 px-3.5 py-2.5 outline-none focus:border-zinc-900"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-3">
             <span className="text-sm font-medium">How long?</span>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               {TIMEFRAMES.map((t) => (
                 <button
                   key={t.id}
@@ -149,14 +149,14 @@ function ModalBody({ onClose }: { onClose: () => void }) {
                 aria-label="Number of days"
                 value={customDays}
                 onChange={(e) => setCustomDays(e.target.value)}
-                className="w-28 rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-900"
+                className="mt-1 w-28 rounded-lg border border-zinc-300 px-3.5 py-2.5 outline-none focus:border-zinc-900"
               />
             )}
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-3">
             <span className="text-sm font-medium">Skip these days</span>
-            <div className="flex gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {WEEKDAYS.map((name, day) => (
                 <button
                   key={name}
@@ -178,7 +178,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
             </p>
           )}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
