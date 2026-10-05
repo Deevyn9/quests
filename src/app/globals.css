@@ -54,8 +54,49 @@ body {
     stroke-dashoffset: 0;
   }
 }
+
+/* Frozen cards: snowflakes form, drift down and melt away. */
+.snowflake {
+  filter: drop-shadow(0 0 1.5px rgb(37 99 235 / 0.7));
+  animation: snow-form var(--dur, 1.8s) ease-out var(--delay, 0s) both;
+}
+@keyframes snow-form {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -8px, 0) scale(0.3) rotate(0deg);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift, 0px), var(--fall, 60px), 0) scale(1)
+      rotate(var(--spin, 120deg));
+  }
+}
+
+/* Used when something swaps in, so it fades instead of snapping. */
+.fade-in {
+  animation: fade-in 0.35s ease-out both;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .x-draw .x-stroke {
+    animation: none;
+  }
+  .snowflake {
+    animation: none;
+    opacity: 0;
+  }
+  .fade-in {
     animation: none;
   }
 }

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { useQuestStore } from "@/features/quests/store";
 import { makeQuest } from "@/lib/domain/fixtures";
 import { QuestCard } from "./QuestCard";
@@ -21,7 +22,7 @@ function show(
     { ...initialState, ready: true, restores, today: () => today },
     true,
   );
-  render(<QuestCard quest={makeQuest({ ...base, ...over })} />);
+  return render(<QuestCard quest={makeQuest({ ...base, ...over })} />);
 }
 
 afterEach(cleanup);
@@ -107,5 +108,58 @@ describe("QuestCard details", () => {
     show("2026-09-03", 0, { pausedFrom: "2026-09-02" });
     const firstDay = screen.getAllByText("Tue")[0].parentElement;
     expect(firstDay).toHaveClass("border-blue-300", "text-blue-200");
+  });
+});
+
+describe("QuestCard transitions", () => {
+  it("fades its colours instead of snapping", () => {
+    show("2026-09-01", 0);
+    expect(screen.getByRole("article")).toHaveClass(
+      "transition-colors",
+      "duration-500",
+    );
+  });
+
+  it("uses one hold button that changes into Resume", () => {
+    show("2026-09-01", 0);
+    expect(screen.getByRole("button", { name: "Put on hold" })).toHaveClass(
+      "transition-colors",
+    );
+    cleanup();
+
+    show("2026-09-03", 0, { pausedFrom: "2026-09-02" });
+    expect(screen.getByRole("button", { name: "Resume" })).toHaveClass(
+      "bg-blue-600",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Put on hold" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("QuestCard snow", () => {
+  it("forms snowflakes on a frozen card", () => {
+    show("2026-09-03", 0, { pausedFrom: "2026-09-02" });
+    expect(
+      screen.getByRole("article").querySelector("[data-snow]"),
+    ).not.toBeNull();
+  });
+
+  it("has no snow on a normal card", () => {
+    show("2026-09-01", 0);
+    expect(screen.getByRole("article").querySelector("[data-snow]")).toBeNull();
+  });
+
+  it("replays the snow when a frozen card is clicked", async () => {
+    const user = userEvent.setup();
+    show("2026-09-03", 0, { pausedFrom: "2026-09-02" });
+    const flake = () =>
+      screen.getByRole("article").querySelector("[data-snow] .snowflake");
+    const before = flake();
+
+    await user.click(screen.getByRole("heading", { name: "Read" }));
+
+    expect(flake()).not.toBeNull();
+    expect(flake()).not.toBe(before);
   });
 });

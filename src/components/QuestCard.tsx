@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { useQuestStore } from "@/features/quests/store";
 import { boxesFor, type Box } from "@/lib/domain/boxes";
 import {
@@ -14,9 +14,10 @@ import { getStatus } from "@/lib/domain/quest";
 import type { Quest, QuestStatus } from "@/lib/domain/types";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FlameIcon, RestoreIcon, SnowflakeIcon } from "./Icons";
+import { SnowBurst } from "./SnowBurst";
 
 const BOX_BASE =
-  "relative grid aspect-square w-full min-w-0 place-items-center rounded-lg border";
+  "relative grid aspect-square w-full min-w-0 place-items-center rounded-lg border transition-colors duration-500";
 
 // A crossed-off day fades its weekday so the X reads cleanly on top of it.
 const BOX_STYLES: Record<Box["state"], string> = {
@@ -61,9 +62,6 @@ const ACTION =
 const DELETE =
   "inline-flex items-center gap-1.5 rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50";
 
-const RESUME =
-  "inline-flex items-center gap-1.5 rounded-full border border-blue-600 bg-blue-600 px-3 py-1 text-xs font-medium text-white transition hover:bg-blue-700";
-
 function statusLabel(status: QuestStatus): string {
   switch (status.state) {
     case "active":
@@ -90,6 +88,34 @@ function StreakIcon({ status, tone }: { status: QuestStatus; tone: Tone }) {
       ? "text-red-400"
       : "text-zinc-400";
   return <FlameIcon className={`size-4 ${colour}`} />;
+}
+
+// One button that morphs between "Put on hold" and "Resume" instead of swapping two buttons.
+function HoldToggle({
+  held,
+  onHold,
+  onResume,
+}: {
+  held: boolean;
+  onHold: () => void;
+  onResume: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={held ? onResume : onHold}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-500 ${
+        held
+          ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
+          : "border-zinc-300 bg-white hover:bg-zinc-50"
+      }`}
+    >
+      <SnowflakeIcon className="size-3.5" />
+      <span key={held ? "resume" : "hold"} className="fade-in">
+        {held ? "Resume" : "Put on hold"}
+      </span>
+    </button>
+  );
 }
 
 function CrossOut({ animate, colour }: { animate: boolean; colour: string }) {
@@ -155,7 +181,7 @@ function DayCell({
           type="button"
           aria-label={`Check in today: ${title}`}
           onClick={onCheckIn}
-          className={`${BOX_BASE} ${style} transition hover:bg-zinc-50`}
+          className={`${BOX_BASE} ${style} hover:bg-zinc-50`}
         >
           {face}
         </button>
@@ -177,6 +203,7 @@ function DayCell({
 
 export function QuestCard({ quest }: { quest: Quest }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [burst, setBurst] = useState(0);
 
   const today = useQuestStore((s) => s.today());
   const restores = useQuestStore((s) => s.restores);
@@ -192,18 +219,29 @@ export function QuestCard({ quest }: { quest: Quest }) {
   const boxes = boxesFor(quest, today);
   const canCheckIn = status.state === "active";
   const onHold = status.state === "paused";
+  const canHold = status.state === "active" || onHold;
   const holdStartsLater = quest.pausedFrom !== null && quest.pausedFrom > today;
   const noRestoresLeft = status.state === "broken" && restores < 1;
   const description = [lengthLabel(quest), skipLabel(quest)]
     .filter(Boolean)
     .join(" · ");
 
+  // Clicking the card itself (not one of its buttons) replays the snow on a frozen quest.
+  function handleCardClick(e: MouseEvent<HTMLElement>) {
+    if (!onHold) return;
+    if ((e.target as HTMLElement).closest("button")) return;
+    setBurst((b) => b + 1);
+  }
+
   return (
     <article
-      className={`flex flex-col gap-4 rounded-xl border p-5 ${TONE_CARD[tone]}`}
+      onClick={handleCardClick}
+      className={`relative flex flex-col gap-4 rounded-xl border p-5 transition-colors duration-500 ${TONE_CARD[tone]}`}
     >
       <div
-        className={`flex flex-col gap-4 ${tone === "recoverable" ? "opacity-60 grayscale" : ""}`}
+        className={`flex flex-col gap-4 transition-[opacity,filter] duration-500 ${
+          tone === "recoverable" ? "opacity-60 grayscale" : ""
+        }`}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -214,7 +252,7 @@ export function QuestCard({ quest }: { quest: Quest }) {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {onHold && (
-              <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
+              <span className="fade-in rounded-full bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
                 {holdStartsLater ? "On hold from tomorrow" : "On hold"}
               </span>
             )}
@@ -241,9 +279,16 @@ export function QuestCard({ quest }: { quest: Quest }) {
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className={`flex items-center gap-1.5 text-sm ${TONE_TEXT[tone]}`}>
-            <StreakIcon status={status} tone={tone} />
-            {statusLabel(status)}
+          <p
+            className={`text-sm transition-colors duration-500 ${TONE_TEXT[tone]}`}
+          >
+            <span
+              key={onHold ? "frozen" : "live"}
+              className="fade-in inline-flex items-center gap-1.5"
+            >
+              <StreakIcon status={status} tone={tone} />
+              {statusLabel(status)}
+            </span>
           </p>
           {noRestoresLeft && (
             <p className="mt-0.5 text-xs text-red-700">
@@ -282,24 +327,12 @@ export function QuestCard({ quest }: { quest: Quest }) {
               Restart
             </button>
           )}
-          {status.state === "active" && (
-            <button
-              type="button"
-              onClick={() => holdQuest(quest.id)}
-              className={ACTION}
-            >
-              <SnowflakeIcon className="size-3.5" />
-              Put on hold
-            </button>
-          )}
-          {status.state === "paused" && (
-            <button
-              type="button"
-              onClick={() => resumeQuest(quest.id)}
-              className={RESUME}
-            >
-              Resume
-            </button>
+          {canHold && (
+            <HoldToggle
+              held={onHold}
+              onHold={() => holdQuest(quest.id)}
+              onResume={() => resumeQuest(quest.id)}
+            />
           )}
           <button
             type="button"
@@ -310,6 +343,8 @@ export function QuestCard({ quest }: { quest: Quest }) {
           </button>
         </div>
       </div>
+
+      {onHold && <SnowBurst burst={burst} />}
 
       <ConfirmDialog
         open={confirmingDelete}
