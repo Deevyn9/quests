@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { formatDay } from "@/lib/domain/dates";
 import { plural, summarizeCompleted } from "@/lib/domain/describe";
-import { TROPHIES } from "@/lib/domain/trophies";
+import { TROPHIES, TROPHY_GROUPS, type Trophy } from "@/lib/domain/trophies";
 import type { DateKey, Quest } from "@/lib/domain/types";
 import { useScrollLock } from "@/lib/useScrollLock";
 
@@ -25,6 +25,41 @@ function Chip({ children }: { children: ReactNode }) {
   return (
     <li className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-700">
       {children}
+    </li>
+  );
+}
+
+function TrophyItem({
+  trophy,
+  earnedOn,
+}: {
+  trophy: Trophy;
+  earnedOn: DateKey | undefined;
+}) {
+  return (
+    <li
+      className={`rounded-xl border p-4 ${
+        earnedOn ? "border-zinc-300 bg-zinc-50" : "border-zinc-200 opacity-60"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <p className="font-medium">{trophy.title}</p>
+        {trophy.restores > 0 && (
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+              earnedOn
+                ? "bg-amber-100 text-amber-800"
+                : "bg-zinc-100 text-zinc-600"
+            }`}
+          >
+            +{plural(trophy.restores, "restore")}
+          </span>
+        )}
+      </div>
+      <p className="text-sm text-zinc-500">{trophy.description}</p>
+      <p className="mt-1 text-xs text-zinc-500">
+        {earnedOn ? `Earned ${formatDay(earnedOn)}` : "Locked"}
+      </p>
     </li>
   );
 }
@@ -71,7 +106,8 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  const earnedCount = Object.keys(trophies).length;
+  // Only count trophies that still exist in the catalog.
+  const earnedCount = TROPHIES.filter((t) => t.key in trophies).length;
 
   return (
     <>
@@ -143,30 +179,29 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
               inert={tab !== "trophies"}
               className="h-full w-1/2 overflow-y-auto px-5 pb-8"
             >
-              <p className="mb-3 text-sm text-zinc-500">
+              <p className="mb-4 text-sm text-zinc-500">
                 {earnedCount} of {TROPHIES.length} earned
               </p>
-              <ul className="flex flex-col gap-3">
-                {TROPHIES.map((t) => {
-                  const earnedOn = trophies[t.key];
-                  return (
-                    <li
-                      key={t.key}
-                      className={`rounded-xl border p-4 ${
-                        earnedOn
-                          ? "border-zinc-300 bg-zinc-50"
-                          : "border-zinc-200 opacity-60"
-                      }`}
-                    >
-                      <p className="font-medium">{t.title}</p>
-                      <p className="text-sm text-zinc-500">{t.description}</p>
-                      <p className="mt-1 text-xs text-zinc-500">
-                        {earnedOn ? `Earned ${formatDay(earnedOn)}` : "Locked"}
-                      </p>
-                    </li>
-                  );
-                })}
-              </ul>
+              {TROPHY_GROUPS.map((group) => (
+                <section
+                  key={group.id}
+                  aria-label={group.label}
+                  className="mb-6"
+                >
+                  <h3 className="mb-2.5 text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                    {group.label}
+                  </h3>
+                  <ul className="flex flex-col gap-2.5">
+                    {TROPHIES.filter((t) => t.group === group.id).map((t) => (
+                      <TrophyItem
+                        key={t.key}
+                        trophy={t}
+                        earnedOn={trophies[t.key]}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              ))}
             </div>
 
             <div

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { makeQuest } from "@/lib/domain/fixtures";
+import { TROPHIES } from "@/lib/domain/trophies";
 import { TrophyPanel } from "./TrophyPanel";
 
 afterEach(cleanup);
@@ -21,7 +22,39 @@ describe("TrophyPanel", () => {
     );
     expect(screen.getByText("First Steps")).toBeInTheDocument();
     expect(screen.getByText("Earned 1 Sep 2026")).toBeInTheDocument();
-    expect(screen.getAllByText("Locked")).toHaveLength(5);
+    expect(screen.getAllByText("Locked")).toHaveLength(TROPHIES.length - 1);
+    expect(
+      screen.getByText(`1 of ${TROPHIES.length} earned`),
+    ).toBeInTheDocument();
+  });
+
+  it("groups trophies under headings", () => {
+    render(<TrophyPanel {...base} open />);
+    for (const label of [
+      "Getting started",
+      "Streaks",
+      "Quests completed",
+      "In one day",
+    ]) {
+      expect(screen.getByRole("region", { name: label })).toBeInTheDocument();
+    }
+  });
+
+  it("shows how many restores a trophy pays", () => {
+    render(<TrophyPanel {...base} open />);
+    const centurion = screen.getByText("Centurion").closest("li");
+    expect(centurion).toHaveTextContent("+5 restores");
+    const gettingWarm = screen.getByText("Getting Warm").closest("li");
+    expect(gettingWarm).toHaveTextContent("+1 restore");
+  });
+
+  it("ignores earned trophies that are no longer in the catalog", () => {
+    render(
+      <TrophyPanel {...base} open trophies={{ "streak-30": "2026-09-01" }} />,
+    );
+    expect(
+      screen.getByText(`0 of ${TROPHIES.length} earned`),
+    ).toBeInTheDocument();
   });
 
   it("switches to the completed quests tab", async () => {
