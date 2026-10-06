@@ -15,6 +15,7 @@ import { SignInPrompt } from "./SignInPrompt";
 import { Toast } from "./Toast";
 import { TrophyButton } from "./TrophyButton";
 import { TrophyPanel } from "./TrophyPanel";
+import { Welcome } from "./Welcome";
 
 type Props = {
   user: { name: string | null } | null;
@@ -51,6 +52,10 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
     (q) => getStatus(q, today).state === "completed",
   );
 
+  // With no quests the empty state has its own "Start a quest" button, so the
+  // "New quest" button would just be a duplicate. It shows while loading to avoid a pop-in.
+  const showNewQuest = !ready || visible.length > 0;
+
   useFlipReorder(listRef, visible.map((q) => q.id).join(","));
 
   const title = user ? titleFor(user.name) : "Quests";
@@ -64,7 +69,7 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
           <div className="flex h-11 items-center">
             <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           </div>
-          {user && (
+          {user ? (
             <>
               <p className="mt-1 flex items-center gap-1.5 text-sm text-zinc-500">
                 <RestoreIcon className="size-4" />
@@ -78,44 +83,53 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
                 Sign out
               </button>
             </>
+          ) : (
+            <p className="mt-1 text-sm text-zinc-500">
+              Build streaks, one day at a time.
+            </p>
           )}
         </header>
 
         <section className="flex flex-col gap-6">
-          <div className="flex h-11 items-center">
-            {user ? (
-              <button
-                type="button"
-                onClick={() => setModalOpen(true)}
-                className="h-10 rounded-full bg-zinc-900 px-5 text-sm font-medium text-white transition hover:bg-zinc-700"
-              >
-                New quest
-              </button>
-            ) : (
-              <SignInPrompt signInAction={signInAction} />
-            )}
-          </div>
+          {!user ? (
+            <>
+              <div className="flex h-11 items-center">
+                <SignInPrompt signInAction={signInAction} />
+              </div>
+              <p className="text-sm text-zinc-500">
+                Your quests and streaks follow you across devices.
+              </p>
+              <Welcome signInAction={signInAction} />
+            </>
+          ) : (
+            <>
+              {showNewQuest && (
+                <div className="flex h-11 items-center">
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(true)}
+                    className="h-10 rounded-full bg-zinc-900 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
+                  >
+                    New quest
+                  </button>
+                </div>
+              )}
 
-          {!user && (
-            <p className="text-sm text-zinc-500">
-              Your quests and streaks follow you across devices.
-            </p>
+              {!ready ? (
+                <ListSkeleton />
+              ) : visible.length === 0 ? (
+                <EmptyState onStart={() => setModalOpen(true)} />
+              ) : (
+                <ul ref={listRef} className="flex flex-col gap-4">
+                  {visible.map((quest) => (
+                    <li key={quest.id} data-flip-id={quest.id}>
+                      <QuestCard quest={quest} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
-
-          {user &&
-            (!ready ? (
-              <ListSkeleton />
-            ) : visible.length === 0 ? (
-              <EmptyState onStart={() => setModalOpen(true)} />
-            ) : (
-              <ul ref={listRef} className="flex flex-col gap-4">
-                {visible.map((quest) => (
-                  <li key={quest.id} data-flip-id={quest.id}>
-                    <QuestCard quest={quest} />
-                  </li>
-                ))}
-              </ul>
-            ))}
         </section>
 
         {/* Third column: intentionally empty, the trophy button is fixed to the viewport */}

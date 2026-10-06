@@ -32,11 +32,11 @@ function renderApp() {
   );
 }
 
-async function createQuest(
-  user: ReturnType<typeof userEvent.setup>,
-  name: string,
-) {
-  await user.click(screen.getByRole("button", { name: /new quest/i }));
+type User = ReturnType<typeof userEvent.setup>;
+
+// These tests start with no quests, so the way in is the empty state's button.
+async function createFirstQuest(user: User, name: string) {
+  await user.click(screen.getByRole("button", { name: /start a quest/i }));
   await user.type(screen.getByLabelText(/quest name/i), name);
   await user.click(screen.getByRole("button", { name: /create quest/i }));
 }
@@ -46,7 +46,7 @@ describe("page scrolling behind dialogs", () => {
     const user = userEvent.setup();
     renderApp();
 
-    await user.click(screen.getByRole("button", { name: /new quest/i }));
+    await user.click(screen.getByRole("button", { name: /start a quest/i }));
     expect(document.body.style.overflow).toBe("hidden");
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));
@@ -80,7 +80,7 @@ describe("putting a quest on hold", () => {
   it("shows the hold straight away after checking in today, and can be undone", async () => {
     const user = userEvent.setup();
     renderApp();
-    await createQuest(user, "Read 10 pages");
+    await createFirstQuest(user, "Read 10 pages");
     await user.click(screen.getByRole("button", { name: /check in today/i }));
 
     await user.click(screen.getByRole("button", { name: /put on hold/i }));

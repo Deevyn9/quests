@@ -15,9 +15,19 @@ describe("EmptyState", () => {
   it("calls onStart when the button is clicked", async () => {
     const onStart = vi.fn();
     render(<EmptyState onStart={onStart} />);
-    await userEvent.click(
-      screen.getByRole("button", { name: /start a quest/i }),
-    );
+    await user().click(screen.getByRole("button", { name: /start a quest/i }));
     expect(onStart).toHaveBeenCalledOnce();
   });
+
+  it("explains how the app works", () => {
+    render(<EmptyState onStart={() => {}} />);
+    expect(
+      screen.getByRole("heading", { name: "How it works" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Pick a challenge")).toBeInTheDocument();
+  });
 });
+
+function user() {
+  return userEvent.setup();
+}

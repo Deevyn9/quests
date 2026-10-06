@@ -29,8 +29,16 @@ function renderApp(
 
 type User = ReturnType<typeof userEvent.setup>;
 
+// With no quests the page offers "Start a quest"; once there is one it offers "New quest".
+async function openNewQuest(user: User) {
+  const button =
+    screen.queryByRole("button", { name: /new quest/i }) ??
+    screen.getByRole("button", { name: /start a quest/i });
+  await user.click(button);
+}
+
 async function createQuest(user: User, name: string) {
-  await user.click(screen.getByRole("button", { name: /new quest/i }));
+  await openNewQuest(user);
   await user.type(screen.getByLabelText(/quest name/i), name);
   await user.click(screen.getByRole("button", { name: /create quest/i }));
 }
@@ -44,11 +52,14 @@ describe("AppShell (signed in)", () => {
     expect(screen.getByText(/streak restore: 0/i)).toBeInTheDocument();
   });
 
-  it("has a new quest button, a trophy button and a sign out button", () => {
+  it("offers Start a quest instead of New quest while there are no quests", () => {
     renderApp();
     expect(
-      screen.getByRole("button", { name: /new quest/i }),
+      screen.getByRole("button", { name: /start a quest/i }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /new quest/i }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /open trophies/i }),
     ).toBeInTheDocument();
@@ -57,9 +68,12 @@ describe("AppShell (signed in)", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the empty state when there are no quests", () => {
+  it("shows the empty state with a short guide", () => {
     renderApp();
     expect(screen.getByText(/no quests at the moment/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "How it works" }),
+    ).toBeInTheDocument();
   });
 
   it("holds the list back until saved quests have loaded", () => {
@@ -67,6 +81,23 @@ describe("AppShell (signed in)", () => {
     renderApp();
     expect(
       screen.queryByText(/no quests at the moment/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /new quest/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the New quest button once there is a quest, and drops the guide", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    await createQuest(user, "Read 10 pages");
+
+    expect(
+      screen.getByRole("button", { name: /new quest/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "How it works" }),
     ).not.toBeInTheDocument();
   });
 
@@ -89,7 +120,7 @@ describe("AppShell (signed in)", () => {
     const user = userEvent.setup();
     renderApp();
 
-    await user.click(screen.getByRole("button", { name: /new quest/i }));
+    await openNewQuest(user);
     await user.click(screen.getByRole("button", { name: /create quest/i }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(/name/i);
@@ -113,7 +144,7 @@ describe("AppShell (signed in)", () => {
     const user = userEvent.setup();
     renderApp();
 
-    await user.click(screen.getByRole("button", { name: /new quest/i }));
+    await openNewQuest(user);
     await user.type(screen.getByLabelText(/quest name/i), "Jump");
     await user.click(screen.getByRole("button", { name: "Day" }));
     await user.click(screen.getByRole("button", { name: /create quest/i }));
@@ -217,7 +248,24 @@ describe("AppShell (signed out)", () => {
       screen.queryByRole("button", { name: /new quest/i }),
     ).not.toBeInTheDocument();
     expect(
+      screen.queryByRole("button", { name: /start a quest/i }),
+    ).not.toBeInTheDocument();
+    expect(
       screen.queryByRole("button", { name: /open trophies/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("explains the app instead of leaving the page bare", () => {
+    renderApp(null);
+    expect(
+      screen.getByText("Build streaks, one day at a time."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("What a quest looks like")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "How it works" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /continue with google/i }),
+    ).toBeInTheDocument();
   });
 });
