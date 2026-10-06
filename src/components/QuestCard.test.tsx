@@ -137,6 +137,19 @@ describe("QuestCard transitions", () => {
       screen.queryByRole("button", { name: "Put on hold" }),
     ).not.toBeInTheDocument();
   });
+
+  it("keeps the hold button the same width in both states", () => {
+    show("2026-09-01", 0);
+    expect(screen.getByRole("button", { name: "Put on hold" })).toHaveClass(
+      "min-w-[7.25rem]",
+    );
+    cleanup();
+
+    show("2026-09-03", 0, frozen);
+    expect(screen.getByRole("button", { name: "Resume" })).toHaveClass(
+      "min-w-[7.25rem]",
+    );
+  });
 });
 
 describe("QuestCard frost", () => {
@@ -161,6 +174,13 @@ describe("QuestCard frost", () => {
     const ice = screen.getByRole("article").querySelector("[data-ice]");
     expect(ice).not.toBeNull();
     expect(ice?.querySelectorAll(".ice-crack").length).toBeGreaterThan(0);
+  });
+
+  it("fades the frost in rather than popping it in", () => {
+    show("2026-09-03", 0, frozen);
+    expect(
+      screen.getByRole("article").querySelector("[data-frost]"),
+    ).toHaveClass("frost-in");
   });
 
   it("has no frost on a normal card", () => {

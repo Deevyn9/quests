@@ -37,7 +37,7 @@ function Flake() {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.6"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
       className="size-full text-white"
@@ -53,14 +53,23 @@ function Flake() {
   );
 }
 
-// Sits behind the card's content. Changing `burst` remounts the cracks and
-// flakes, which makes the frost form again.
-export function FrostOverlay({ burst }: { burst: number }) {
+// Sits behind the card's content. `active` fades it in; turning it off fades it out
+// (the card keeps it mounted for a moment, see useLingering). Changing `burst`
+// remounts the cracks and flakes, which makes the frost form again.
+export function FrostOverlay({
+  burst,
+  active,
+}: {
+  burst: number;
+  active: boolean;
+}) {
   return (
     <div
       aria-hidden
       data-frost
-      className="ice-frame pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl"
+      className={`ice-frame ${
+        active ? "frost-in" : "frost-out"
+      } pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl`}
     >
       <svg
         key={`ice-${burst}`}
@@ -74,7 +83,7 @@ export function FrostOverlay({ burst }: { burst: number }) {
             key={i}
             d={d}
             className="ice-crack"
-            style={{ "--delay": `${i * 0.12}s` } as CSSProperties}
+            style={{ "--delay": `${i * 0.1}s` } as CSSProperties}
           />
         ))}
       </svg>
@@ -93,7 +102,7 @@ export function FrostOverlay({ burst }: { burst: number }) {
                 marginLeft: -f.size / 2,
                 marginTop: -f.size / 2,
                 "--rot": `${f.rot}deg`,
-                "--delay": `${(i % 6) * 0.1}s`,
+                "--delay": `${(i % 6) * 0.08}s`,
               } as CSSProperties
             }
           >

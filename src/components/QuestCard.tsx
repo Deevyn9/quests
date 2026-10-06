@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type MouseEvent } from "react";
+import { memo, useState, type MouseEvent } from "react";
 import { useQuestStore } from "@/features/quests/store";
 import { boxesFor, type Box } from "@/lib/domain/boxes";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/lib/domain/describe";
 import { getStatus } from "@/lib/domain/quest";
 import type { Quest, QuestStatus } from "@/lib/domain/types";
+import { useLingering } from "@/lib/useLingering";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FrostOverlay } from "./FrostOverlay";
 import { FlameIcon, RestoreIcon, SnowflakeIcon } from "./Icons";
@@ -91,6 +92,7 @@ function StreakIcon({ status, tone }: { status: QuestStatus; tone: Tone }) {
 }
 
 // One button that morphs between "Put on hold" and "Resume" instead of swapping two buttons.
+// The width is fixed so the other buttons don't slide sideways when the label changes.
 function HoldToggle({
   held,
   onHold,
@@ -104,7 +106,7 @@ function HoldToggle({
     <button
       type="button"
       onClick={held ? onResume : onHold}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-500 ${
+      className={`inline-flex min-w-29 items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-500 ${
         held
           ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
           : "border-zinc-300 bg-white hover:bg-zinc-50"
@@ -145,7 +147,7 @@ type DayCellProps = {
 };
 
 // The weekday sits centered in the box; the day number sits underneath it.
-function DayCell({
+export function DayCell({
   box,
   today,
   tone,
@@ -201,7 +203,8 @@ function DayCell({
   );
 }
 
-export function QuestCard({ quest }: { quest: Quest }) {
+// Memoised, so changing one quest doesn't re-render every other card.
+export const QuestCard = memo(function QuestCard({ quest }: { quest: Quest }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [burst, setBurst] = useState(0);
 
@@ -226,6 +229,9 @@ export function QuestCard({ quest }: { quest: Quest }) {
     .filter(Boolean)
     .join(" · ");
 
+  // Stays mounted for a moment after resuming, so the frost can fade out.
+  const showFrost = useLingering(onHold, 450);
+
   // Clicking the card itself (not one of its buttons) makes the frost form again.
   function handleCardClick(e: MouseEvent<HTMLElement>) {
     if (!onHold) return;
@@ -238,7 +244,7 @@ export function QuestCard({ quest }: { quest: Quest }) {
       onClick={handleCardClick}
       className={`relative flex flex-col gap-4 rounded-xl border p-5 transition-colors duration-500 ${TONE_CARD[tone]}`}
     >
-      {onHold && <FrostOverlay burst={burst} />}
+      {showFrost && <FrostOverlay burst={burst} active={onHold} />}
 
       <div
         className={`relative z-10 flex flex-col gap-4 transition-[opacity,filter] duration-500 ${
@@ -247,7 +253,7 @@ export function QuestCard({ quest }: { quest: Quest }) {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="text-base font-semibold break-words">
+            <h3 className="wrap-break-words text-base font-semibold">
               {quest.title}
             </h3>
             <p className="mt-0.5 text-sm text-zinc-500">{description}</p>
@@ -360,4 +366,4 @@ export function QuestCard({ quest }: { quest: Quest }) {
       />
     </article>
   );
-}
+});
