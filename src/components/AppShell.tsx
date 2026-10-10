@@ -16,6 +16,7 @@ import { Toast } from "./Toast";
 import { TrophyButton } from "./TrophyButton";
 import { TrophyPanel } from "./TrophyPanel";
 import { Welcome } from "./Welcome";
+import { InstallButton } from "./InstallButton";
 
 type Props = {
   user: { name: string | null } | null;
@@ -69,6 +70,7 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
           <div className="flex h-11 items-center">
             <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           </div>
+          <InstallButton />
           {user ? (
             <>
               <p className="mt-1 flex items-center gap-1.5 text-sm text-zinc-500">
