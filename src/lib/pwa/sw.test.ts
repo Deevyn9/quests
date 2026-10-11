@@ -148,6 +148,26 @@ describe("signing out", () => {
     expect(sw.stores.has("quests-pages-v1")).toBe(false);
   });
 
+  it("fetches and keeps the home page when asked (first ever visit)", async () => {
+    const home = res("first-visit-home");
+    const sw = load(async () => home);
+    let waited: Promise<unknown> = Promise.resolve();
+    sw.handlers.message({ data: { type: "CACHE_HOME" }, waitUntil: (p: Promise<unknown>) => (waited = p) });
+    await waited;
+    await flush();
+    expect(sw.bucket("quests-pages-v1").get("/")).toBe(home);
+  });
+
+  it("doesn't fail, or save anything, when CACHE_HOME is asked while offline", async () => {
+    const sw = load(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    let waited: Promise<unknown> = Promise.resolve();
+    sw.handlers.message({ data: { type: "CACHE_HOME" }, waitUntil: (p: Promise<unknown>) => (waited = p) });
+    await expect(waited).resolves.toBeUndefined();
+    expect(sw.bucket("quests-pages-v1").size).toBe(0);
+  });
+
   it("ignores other messages", () => {
     const sw = load(async () => res("net"));
     sw.handlers.message({ data: { type: "SOMETHING" }, waitUntil: () => { throw new Error("should not wait"); } });

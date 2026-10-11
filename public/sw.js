@@ -27,26 +27,52 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((k) => k !== STATIC && k !== PAGES).map((k) => caches.delete(k))),
+        Promise.all(
+          keys
+            .filter((k) => k !== STATIC && k !== PAGES)
+            .map((k) => caches.delete(k)),
+        ),
       )
       .then(() => self.clients.claim()),
   );
 });
 
-// The page tells us when the user signs out.
+function saveHome(response) {
+  if (response.ok && response.type === "basic" && !response.redirected) {
+    const copy = response.clone();
+    caches.open(PAGES).then((cache) => cache.put(HOME, copy));
+  }
+}
+
+// The page talks to us in two cases:
+//  - CLEAR_PAGES: the user signed out, forget the saved page
+//  - CACHE_HOME: this was the first ever visit (the page loaded before this worker
+//    existed, so we never saw it), so fetch and keep a copy now
 self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "CLEAR_PAGES") {
+  const type = event.data && event.data.type;
+  if (type === "CLEAR_PAGES") {
     event.waitUntil(caches.delete(PAGES));
+  } else if (type === "CACHE_HOME") {
+    event.waitUntil(
+      fetch(HOME)
+        .then(saveHome)
+        .catch(() => {}),
+    );
   }
 });
 
 function isStaticAsset(url) {
-  return url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/");
+  return (
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/icons/")
+  );
 }
 
 function offlineFallback(url) {
   const savedHome =
-    url.pathname === HOME ? caches.open(PAGES).then((c) => c.match(HOME)) : Promise.resolve(null);
+    url.pathname === HOME
+      ? caches.open(PAGES).then((c) => c.match(HOME))
+      : Promise.resolve(null);
   return savedHome
     .then((hit) => hit || caches.open(STATIC).then((c) => c.match(OFFLINE_URL)))
     .then((hit) => hit || Response.error());
@@ -64,10 +90,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          if (url.pathname === HOME && response.ok && response.type === "basic" && !response.redirected) {
-            const copy = response.clone();
-            caches.open(PAGES).then((cache) => cache.put(HOME, copy));
-          }
+          if (url.pathname === HOME) saveHome(response);
           return response;
         })
         .catch(() => offlineFallback(url)),
