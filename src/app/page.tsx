@@ -22,7 +22,7 @@ export default async function Home() {
   return (
     <>
       {userId && initialState && (
-        <QuestSync key={userId} initialState={initialState} />
+        <QuestSync key={userId} userId={userId} initialState={initialState} />
       )}
       <AppShell
         user={session?.user ? { name: session.user.name ?? null } : null}
