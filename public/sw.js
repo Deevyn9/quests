@@ -1,14 +1,22 @@
 // Quests service worker.
-// Caches only things that are identical for every user: the offline page, the icons
-// and the build's static assets. HTML, server actions and anything holding quests are
-// never cached, so a shared device can't show one person's data to another.
-const CACHE = "quests-static-v1";
+//
+// What it keeps, and why:
+//  - the offline page and the build's static files (scripts, fonts, icons): identical
+//    for every user, so safe to share and cache
+//  - one copy of the home page, so the app can open without a connection. It's
+//    replaced on every online visit and deleted on sign-out (see CLEAR_PAGES), so a
+//    shared device never shows the previous person's quests
+//
+// What it never touches: POSTs (saving changes), /api/ (sign-in), other websites.
+const STATIC = "quests-static-v1";
+const PAGES = "quests-pages-v1";
 const OFFLINE_URL = "/offline.html";
+const HOME = "/";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
-      .open(CACHE)
+      .open(STATIC)
       .then((cache) => cache.add(OFFLINE_URL))
       .then(() => self.skipWaiting()),
   );
@@ -19,19 +27,29 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(
-          keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)),
-        ),
+        Promise.all(keys.filter((k) => k !== STATIC && k !== PAGES).map((k) => caches.delete(k))),
       )
       .then(() => self.clients.claim()),
   );
 });
 
+// The page tells us when the user signs out.
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "CLEAR_PAGES") {
+    event.waitUntil(caches.delete(PAGES));
+  }
+});
+
 function isStaticAsset(url) {
-  return (
-    url.pathname.startsWith("/_next/static/") ||
-    url.pathname.startsWith("/icons/")
-  );
+  return url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/");
+}
+
+function offlineFallback(url) {
+  const savedHome =
+    url.pathname === HOME ? caches.open(PAGES).then((c) => c.match(HOME)) : Promise.resolve(null);
+  return savedHome
+    .then((hit) => hit || caches.open(STATIC).then((c) => c.match(OFFLINE_URL)))
+    .then((hit) => hit || Response.error());
 }
 
 self.addEventListener("fetch", (event) => {
@@ -44,25 +62,30 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() =>
-        caches.match(OFFLINE_URL).then((r) => r || Response.error()),
-      ),
+      fetch(request)
+        .then((response) => {
+          if (url.pathname === HOME && response.ok && response.type === "basic" && !response.redirected) {
+            const copy = response.clone();
+            caches.open(PAGES).then((cache) => cache.put(HOME, copy));
+          }
+          return response;
+        })
+        .catch(() => offlineFallback(url)),
     );
     return;
   }
 
   if (isStaticAsset(url)) {
     event.respondWith(
-      caches.match(request).then(
-        (hit) =>
-          hit ||
-          fetch(request).then((response) => {
-            if (response.status === 200) {
-              const copy = response.clone();
-              caches.open(CACHE).then((cache) => cache.put(request, copy));
-            }
-            return response;
-          }),
+      caches.open(STATIC).then((cache) =>
+        cache.match(request).then(
+          (hit) =>
+            hit ||
+            fetch(request).then((response) => {
+              if (response.status === 200) cache.put(request, response.clone());
+              return response;
+            }),
+        ),
       ),
     );
   }
