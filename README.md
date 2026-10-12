@@ -96,7 +96,7 @@ docs/                   Screenshots and the freeze demo
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/<your-username>/quests.git
+git clone https://github.com/Deevyn9/quests.git
 cd quests
 npm install
 ```
@@ -193,7 +193,7 @@ The service worker only registers in production builds, so to try it locally run
 
 ## Author
 
-Built by [Divine Obeten](https://divineobeten.xyz), a design engineer working where engineering craft and design sensibility meet.
+Built by [Divine Obeten](https://divineobeten.xyz), a product engineer working where engineering craft and design meet.
 
 ## License
 
