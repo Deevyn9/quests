@@ -6,60 +6,21 @@
     <meta name="theme-color" content="#ffffff" />
     <title>Offline · Quests</title>
     <style>
-      body {
-        margin: 0;
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        padding: 24px;
-        box-sizing: border-box;
-        background: #fff;
-        color: #111;
-        font-family:
-          system-ui,
-          -apple-system,
-          "Segoe UI",
-          sans-serif;
-        text-align: center;
-      }
-      main {
-        max-width: 360px;
-      }
-      img {
-        width: 72px;
-        height: 72px;
-      }
-      h1 {
-        margin: 20px 0 8px;
-        font-size: 22px;
-      }
-      p {
-        margin: 0 0 24px;
-        color: #555;
-        line-height: 1.5;
-      }
-      button {
-        font: inherit;
-        font-weight: 500;
-        padding: 10px 18px;
-        border-radius: 12px;
-        border: 1px solid #d4d4d8;
-        background: #fff;
-        cursor: pointer;
-      }
-      button:hover {
-        background: #f4f4f5;
-      }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; box-sizing: border-box;
+        background: #fff; color: #111; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; text-align: center; }
+      main { max-width: 360px; }
+      img { width: 72px; height: 72px; }
+      h1 { margin: 20px 0 8px; font-size: 22px; }
+      p { margin: 0 0 24px; color: #555; line-height: 1.5; }
+      button { font: inherit; font-weight: 500; padding: 10px 18px; border-radius: 12px; border: 1px solid #d4d4d8; background: #fff; cursor: pointer; }
+      button:hover { background: #f4f4f5; }
     </style>
   </head>
   <body>
     <main>
       <img src="/icons/icon-192.png" alt="" />
       <h1>You're offline</h1>
-      <p>
-        Quests needs a connection to load and save your check-ins. Your quests
-        are safe. Reconnect and try again.
-      </p>
+      <p>Quests hasn't been opened on this device with a connection yet, so there's nothing saved to show. Reconnect and try again. After that it opens offline too.</p>
       <button type="button" onclick="location.reload()">Try again</button>
     </main>
   </body>

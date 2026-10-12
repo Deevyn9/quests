@@ -17,6 +17,9 @@ import { TrophyButton } from "./TrophyButton";
 import { TrophyPanel } from "./TrophyPanel";
 import { Welcome } from "./Welcome";
 import { InstallButton } from "./InstallButton";
+import { getSyncStatus } from "@/features/quests/activeSync";
+import { clearLocalData } from "@/features/quests/cleanup";
+import { SyncBanner } from "./SyncBanner";
 
 type Props = {
   user: { name: string | null } | null;
@@ -45,6 +48,7 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
   const restores = useQuestStore((s) => s.restores);
   const trophies = useQuestStore((s) => s.trophies);
   const today = useQuestStore((s) => s.today());
+  const notify = useQuestStore((s) => s.notify);
 
   const visible = quests.filter(
     (q) => getStatus(q, today).state !== "completed",
@@ -79,7 +83,19 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
               </p>
               <button
                 type="button"
-                onClick={() => setSignOutOpen(true)}
+                onClick={() => {
+                  // Signing out clears this device's copy, so unsent changes must be sent first.
+                  const { pending, offline } = getSyncStatus();
+                  if (pending > 0 || offline) {
+                    notify(
+                      offline
+                        ? "You're offline. Reconnect before signing out so nothing is lost."
+                        : "Still saving your changes. Try again in a moment.",
+                    );
+                    return;
+                  }
+                  setSignOutOpen(true);
+                }}
                 className="mt-2 text-xs text-zinc-500 underline hover:text-zinc-900"
               >
                 Sign out
@@ -101,6 +117,9 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
               <p className="text-sm text-zinc-500">
                 Your quests and streaks follow you across devices.
               </p>
+
+              {user && <SyncBanner />}
+
               <Welcome signInAction={signInAction} />
             </>
           ) : (
@@ -155,6 +174,7 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
             confirmLabel="Sign out"
             onConfirm={() => {
               setSignOutOpen(false);
+              clearLocalData();
               void signOutAction();
             }}
             onCancel={() => setSignOutOpen(false)}

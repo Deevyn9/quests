@@ -32,6 +32,8 @@ export type QuestState = AppState & {
   holdQuest: (id: string) => void;
   resumeQuest: (id: string) => void;
   deleteQuest: (id: string) => void;
+    resync: (conflict: boolean) => Promise<void>;
+  notify: (message: string) => void;
   dismissToast: () => void;
 };
 
@@ -143,6 +145,26 @@ export const createQuestStore = (today: () => DateKey = browserToday, initialApi
           (s) => moves.deleteQuest(s, id),
           (server) => server.remove(id),
         ),
+        
+            // After queued offline changes have been sent: show what the server really has.
+      // Only says something when a queued change had to be dropped.
+      resync: async (conflict) => {
+        const server = api;
+        if (!server) return;
+        try {
+          const fresh = await server.load();
+          set({
+            ...fresh,
+            ...(conflict
+              ? { toast: toast("Some changes made offline couldn't be saved, so we refreshed") }
+              : {}),
+          });
+        } catch {
+          // keep what's on screen; the next visit refreshes it
+        }
+      },
+
+      notify: (message) => set({ toast: toast(message) }),
 
       dismissToast: () => set({ toast: null }),
     };

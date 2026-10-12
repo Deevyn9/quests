@@ -139,16 +139,17 @@ describe("QuestCard transitions", () => {
   });
 
   it("keeps the hold button the same width in both states", () => {
+    const width = (el: HTMLElement) => el.className.match(/min-w-\S+/)?.[0];
+
     show("2026-09-01", 0);
-    expect(screen.getByRole("button", { name: "Put on hold" })).toHaveClass(
-      "min-w-[7.25rem]",
-    );
+    const hold = width(screen.getByRole("button", { name: "Put on hold" }));
+    expect(hold).toBeDefined();
     cleanup();
 
     show("2026-09-03", 0, frozen);
-    expect(screen.getByRole("button", { name: "Resume" })).toHaveClass(
-      "min-w-[7.25rem]",
-    );
+    const resume = width(screen.getByRole("button", { name: "Resume" }));
+
+    expect(resume).toBe(hold);
   });
 });
 

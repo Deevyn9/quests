@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { loadState, mutateState } from "@/lib/db/state";
 import type { NewQuestInput } from "@/lib/domain/create";
-import { daysBetween } from "@/lib/domain/dates";
+import { assertPlausibleDay } from "./plausibleDay";
 import * as moves from "@/lib/domain/transitions";
 import type { AppState } from "@/lib/domain/transitions";
 
@@ -20,11 +20,6 @@ async function requireUserId(): Promise<string> {
 
 // The browser tells us what day it is for the user. Any real timezone is within
 // a day of UTC, so anything further out is rejected.
-function assertPlausibleDay(day: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error("Invalid date");
-  const utcToday = new Date().toISOString().slice(0, 10);
-  if (Math.abs(daysBetween(utcToday, day)) > 1) throw new Error("Date out of range");
-}
 
 function assertId(id: string) {
   if (!UUID.test(id)) throw new Error("Invalid id");
