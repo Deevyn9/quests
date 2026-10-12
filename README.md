@@ -197,4 +197,4 @@ Built by [Divine Obeten](https://divineobeten.xyz), a product engineer working w
 
 ## License
 
-MIT. Add a `LICENSE` file to the repository root to make it official.
+MIT.
