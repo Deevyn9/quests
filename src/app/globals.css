@@ -153,3 +153,16 @@ body {
     animation: none;
   }
 }
+
+/* Number inputs without the up/down spinner buttons */
+.no-spinner {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.no-spinner::-webkit-inner-spin-button,
+.no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}

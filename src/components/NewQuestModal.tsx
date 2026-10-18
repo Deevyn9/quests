@@ -64,6 +64,8 @@ function ModalBody({ onClose }: { onClose: () => void }) {
   const [customDays, setCustomDays] = useState("14");
   const [skipDays, setSkipDays] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [daysFocused, setDaysFocused] = useState(false);
+  const daysFloated = daysFocused || customDays !== "";
 
   const customOpen = timeframe === "custom";
 
@@ -154,17 +156,45 @@ function ModalBody({ onClose }: { onClose: () => void }) {
                   : "grid-rows-[0fr] opacity-0"
               }`}
             >
-              <div className="overflow-hidden">
-                <div className="pt-3">
+              <div className="mt-2 overflow-hidden pt-3.5">
+                <div className="relative h-12.5 w-36">
                   <input
-                    type="number"
-                    min={1}
-                    max={365}
+                    id="custom-days"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={5}
                     aria-label="Number of days"
                     value={customDays}
-                    onChange={(e) => setCustomDays(e.target.value)}
-                    className="w-28 rounded-lg border border-zinc-300 px-3.5 py-2.5 outline-none focus:border-zinc-900"
+                    onChange={(e) =>
+                      setCustomDays(e.target.value.replace(/\D/g, ""))
+                    }
+                    onFocus={() => setDaysFocused(true)}
+                    onBlur={() => setDaysFocused(false)}
+                    className={`h-full w-full rounded-lg border bg-transparent px-3.5 transition-colors outline-none ${
+                      daysFocused ? "border-zinc-900" : "border-zinc-300"
+                    }`}
                   />
+
+                  {/* The "10 days" hint, shown only while the field is empty and idle */}
+                  <span
+                    aria-hidden
+                    className={`pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-zinc-400 transition-opacity duration-200 motion-reduce:transition-none ${
+                      daysFloated ? "opacity-0" : "opacity-100"
+                    }`}
+                  >
+                    10 days
+                  </span>
+
+                  {/* "Days" slides up onto the border when focused or filled */}
+                  <label
+                    htmlFor="custom-days"
+                    className={`pointer-events-none absolute left-3 -translate-y-1/2 bg-white px-1.5 text-xs transition-all duration-200 motion-reduce:transition-none ${
+                      daysFloated ? "top-0 opacity-100" : "top-1/2 opacity-0"
+                    } ${daysFocused ? "text-zinc-900" : "text-zinc-500"}`}
+                  >
+                    Days
+                  </label>
                 </div>
               </div>
             </div>
