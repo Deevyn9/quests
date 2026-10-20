@@ -84,6 +84,8 @@ export function createSync(options: Options) {
         return server.hold(op.id, op.today);
       case "resume":
         return server.resume(op.id, op.today);
+      case "edit":
+        return server.edit(op.id, op.patch, op.today);
       case "remove":
         return server.remove(op.id);
     }
@@ -175,6 +177,7 @@ export function createSync(options: Options) {
     restart: (id, today) => enqueue({ type: "restart", id, today }),
     hold: (id, today) => enqueue({ type: "hold", id, today }),
     resume: (id, today) => enqueue({ type: "resume", id, today }),
+    edit: (id, patch, today) => enqueue({ type: "edit", id, patch, today }),
     remove: (id) => enqueue({ type: "remove", id }),
     load: () => server.load(),
   };

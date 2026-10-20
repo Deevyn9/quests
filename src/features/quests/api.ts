@@ -15,6 +15,7 @@ export const serverApi: QuestApi = {
   restart: async (id, today) => unwrap(await actions.restartAction(id, today)),
   hold: async (id, today) => unwrap(await actions.holdAction(id, today)),
   resume: async (id, today) => unwrap(await actions.resumeAction(id, today)),
+  edit: async (id, patch, today) => unwrap(await actions.editAction(id, patch, today)),
   remove: async (id) => unwrap(await actions.deleteAction(id)),
   load: () => actions.loadAction(),
 };

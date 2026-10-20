@@ -90,4 +90,15 @@ describe("diffState", () => {
       { key: "streak-7", earnedOn: "2026-09-07" },
     ]);
   });
+
+  it("saves an edited quest as one row update, plus the days it pinned as skipped", () => {
+    const before = state([makeQuest({ skipWeekdays: [3] })]);
+    const after = state([
+      makeQuest({ title: "Run", skipWeekdays: [], skippedDates: ["2026-09-02"] }),
+    ]);
+    const changes = diffState(before, after);
+    expect(changes.updateQuests.map((q) => q.title)).toEqual(["Run"]);
+    expect(changes.upsertDays).toEqual([{ questId: "q1", date: "2026-09-02", kind: "skipped" }]);
+    expect(changes.bumpQuestIds).toEqual([]);
+  });
 });
