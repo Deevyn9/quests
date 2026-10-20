@@ -16,6 +16,7 @@ import { useLingering } from "@/lib/useLingering";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FrostOverlay } from "./FrostOverlay";
 import { FlameIcon, RestoreIcon, SnowflakeIcon } from "./Icons";
+import { EditQuestModal } from "./EditQuestModal";
 
 const BOX_BASE =
   "relative grid aspect-square w-full min-w-0 place-items-center rounded-lg border transition-colors duration-500";
@@ -207,6 +208,7 @@ export function DayCell({
 export const QuestCard = memo(function QuestCard({ quest }: { quest: Quest }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [burst, setBurst] = useState(0);
+  const [editing, setEditing] = useState(false);
 
   const today = useQuestStore((s) => s.today());
   const restores = useQuestStore((s) => s.restores);
@@ -344,6 +346,27 @@ export const QuestCard = memo(function QuestCard({ quest }: { quest: Quest }) {
           )}
           <button
             type="button"
+            aria-label={`Edit ${quest.title}`}
+            onClick={() => setEditing(true)}
+            className="…copy your Delete button's classes, but with neutral and text colours… inline-flex items-center gap-1.5 border"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="size-3.5"
+            >
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+            <span className="max-sm:sr-only">Edit</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setConfirmingDelete(true)}
             className={DELETE}
           >
@@ -363,6 +386,12 @@ export const QuestCard = memo(function QuestCard({ quest }: { quest: Quest }) {
           deleteQuest(quest.id);
         }}
         onCancel={() => setConfirmingDelete(false)}
+      />
+
+      <EditQuestModal
+        quest={quest}
+        open={editing}
+        onClose={() => setEditing(false)}
       />
     </article>
   );
