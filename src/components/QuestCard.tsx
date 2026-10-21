@@ -16,6 +16,9 @@ import { useLingering } from "@/lib/useLingering";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FrostOverlay } from "./FrostOverlay";
 import { FlameIcon, RestoreIcon, SnowflakeIcon } from "./Icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PencilEdit02Icon } from "@hugeicons/core-free-icons";
+
 import { EditQuestModal } from "./EditQuestModal";
 
 const BOX_BASE =
@@ -63,6 +66,9 @@ const ACTION =
 
 const DELETE =
   "inline-flex items-center gap-1.5 rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50";
+
+const EDIT =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-4 text-sm font-medium text-xs text-zinc-900 transition hover:bg-zinc-50 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 max-sm:w-10 max-sm:px-0";
 
 function statusLabel(status: QuestStatus): string {
   switch (status.state) {
@@ -348,22 +354,15 @@ export const QuestCard = memo(function QuestCard({ quest }: { quest: Quest }) {
             type="button"
             aria-label={`Edit ${quest.title}`}
             onClick={() => setEditing(true)}
-            className="…copy your Delete button's classes, but with neutral and text colours… inline-flex items-center gap-1.5 border"
+            className={EDIT}
           >
-            <svg
-              viewBox="0 0 24 24"
+            <HugeiconsIcon
+              icon={PencilEdit02Icon}
+              size={18}
+              strokeWidth={1.5}
               aria-hidden
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="size-3.5"
-            >
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-            </svg>
-            <span className="max-sm:sr-only">Edit</span>
+            />
+            <span className="mt-0.5 max-sm:sr-only">Edit</span>
           </button>
           <button
             type="button"
