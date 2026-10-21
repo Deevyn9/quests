@@ -15,6 +15,7 @@ function fakeServer(over: Partial<QuestApi> = {}): QuestApi {
     restart: vi.fn().mockResolvedValue(undefined),
     hold: vi.fn().mockResolvedValue(undefined),
     resume: vi.fn().mockResolvedValue(undefined),
+    edit: vi.fn().mockResolvedValue(undefined),
     remove: vi.fn().mockResolvedValue(undefined),
     load: vi.fn().mockResolvedValue({ quests: [], restores: 0, trophies: {} }),
     ...over,
@@ -236,5 +237,108 @@ describe("status", () => {
 
     await sync.api.checkIn("a", DAY);
     expect(listener).toHaveBeenCalled();
+  });
+
+  it("queues an edit offline, keeps it on the device, and sends it after the quest it belongs to", async () => {
+    const order: string[] = [];
+    const { sync, server, net, lastSaved } = setup(
+      {
+        addQuest: vi.fn(async () => void order.push("add")),
+        edit: vi.fn(async () => void order.push("edit")),
+      },
+      { online: false },
+    );
+    await sync.api.addQuest(input, "q1", DAY);
+    await sync.api.edit("q1", { title: "Run" }, DAY);
+    expect(lastSaved()).toEqual([
+      { type: "addQuest", input, id: "q1", today: DAY },
+      { type: "edit", id: "q1", patch: { title: "Run" }, today: DAY },
+    ]);
+
+    net.online = true;
+    sync.refresh();
+    await vi.waitFor(() => expect(sync.getStatus().pending).toBe(0));
+    expect(order).toEqual(["add", "edit"]);
+    expect(server.edit).toHaveBeenCalledWith("q1", { title: "Run" }, DAY);
+  });
+
+});
+
+describe("when the server says no", () => {
+  it("drops that change, carries on with the rest, then asks for a refresh", async () => {
+    const { sync, server, onResync } = setup({
+      checkIn: vi.fn().mockRejectedValue(new RejectedError("Quest not found")),
+    });
+
+    await sync.api.checkIn("gone", DAY);
+    await sync.api.hold("b", DAY);
+
+    await vi.waitFor(() => expect(onResync).toHaveBeenCalled());
+    expect(server.hold).toHaveBeenCalledWith("b", DAY);
+    expect(sync.getStatus().pending).toBe(0);
+    expect(onResync).toHaveBeenCalledWith(true);
+  });
+
+  it("waits for the whole queue before refreshing", async () => {
+    let release!: () => void;
+    const { sync, onResync } = setup({
+      checkIn: vi.fn().mockRejectedValue(new RejectedError("no")),
+      hold: vi.fn(() => new Promise<void>((r) => (release = r))),
+    });
+    void sync.api.checkIn("a", DAY);
+    void sync.api.hold("b", DAY);
+    await vi.waitFor(() => expect(sync.getStatus().pending).toBe(1));
+    expect(onResync).not.toHaveBeenCalled();
+
+    release();
+    await vi.waitFor(() => expect(onResync).toHaveBeenCalledWith(true));
+  });
+});
+
+describe("an expired session", () => {
+  it("keeps the changes and says sign-in is needed, without retrying forever", async () => {
+    const { sync, clock } = setup({ checkIn: vi.fn().mockRejectedValue(new NotSignedInError()) });
+
+    await sync.api.checkIn("a", DAY);
+    await vi.waitFor(() => expect(sync.getStatus().needsSignIn).toBe(true));
+
+    expect(sync.getStatus().pending).toBe(1);
+    expect(clock.pending()).toBe(0);
+  });
+});
+
+describe("refreshing the screen", () => {
+  it("does not refresh after a normal online change", async () => {
+    const { sync, onResync } = setup();
+    await sync.api.checkIn("a", DAY);
+    await vi.waitFor(() => expect(sync.getStatus().pending).toBe(0));
+    expect(onResync).not.toHaveBeenCalled();
+  });
+
+  it("refreshes after replaying changes saved from an earlier session", async () => {
+    const { sync, onResync } = setup({}, { outbox: [{ type: "checkIn", id: "a", today: DAY }] });
+    await sync.flush({ resync: true });
+    expect(onResync).toHaveBeenCalledWith(false);
+  });
+});
+
+describe("status", () => {
+  it("notifies subscribers only when something changed", async () => {
+    const { sync } = setup({}, { online: false });
+    const listener = vi.fn();
+    sync.subscribe(listener);
+
+    sync.refresh(); // nothing changed
+    expect(listener).not.toHaveBeenCalled();
+
+    await sync.api.checkIn("a", DAY);
+    expect(listener).toHaveBeenCalled();
+  });
+
+  it("sends an edit in order, after the quest it belongs to", async () => {
+    const { sync, server } = setup({}, { online: false });
+    void sync.api.addQuest(input, "q1", DAY);
+    void sync.api.edit("q1", { title: "Run" }, DAY);
+    expect(sync.getStatus().pending).toBe(2);
   });
 });

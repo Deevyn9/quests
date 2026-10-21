@@ -4,7 +4,8 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { loadState, mutateState } from "@/lib/db/state";
 import type { NewQuestInput } from "@/lib/domain/create";
-import { assertPlausibleDay } from "./plausibleDay";
+import { daysBetween } from "@/lib/domain/dates";
+import type { QuestPatch } from "@/lib/domain/edit";
 import * as moves from "@/lib/domain/transitions";
 import type { AppState } from "@/lib/domain/transitions";
 
@@ -20,6 +21,11 @@ async function requireUserId(): Promise<string> {
 
 // The browser tells us what day it is for the user. Any real timezone is within
 // a day of UTC, so anything further out is rejected.
+function assertPlausibleDay(day: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error("Invalid date");
+  const utcToday = new Date().toISOString().slice(0, 10);
+  if (Math.abs(daysBetween(utcToday, day)) > 1) throw new Error("Date out of range");
+}
 
 function assertId(id: string) {
   if (!UUID.test(id)) throw new Error("Invalid id");
@@ -85,6 +91,16 @@ export async function resumeAction(id: string, today: string) {
     assertId(id);
     assertPlausibleDay(today);
     await mutateState(userId, (s) => moves.resumeQuest(s, id, today));
+  });
+}
+
+export async function editAction(id: string, patch: QuestPatch, today: string) {
+  return run(async () => {
+    const userId = await requireUserId();
+    assertId(id);
+    assertPlausibleDay(today);
+    // The patch is validated field by field inside the shared rules.
+    await mutateState(userId, (s) => moves.editQuest(s, id, patch, today));
   });
 }
 

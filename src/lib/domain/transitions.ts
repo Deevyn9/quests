@@ -1,4 +1,5 @@
 import { createQuest, type NewQuestInput } from "./create";
+import { editQuest as applyEdit, type QuestPatch } from "./edit";
 import * as domain from "./quest";
 import { newlyEarned } from "./trophies";
 import { INFINITE_REWARD_EVERY, type DateKey, type Quest } from "./types";
@@ -19,8 +20,6 @@ function find(state: AppState, id: string): Quest {
   return quest;
 }
 
-const named = (quest: Quest) => `"${quest.title}"`;
-
 const replace = (quests: Quest[], updated: Quest) =>
   quests.map((q) => (q.id === updated.id ? updated : q));
 
@@ -29,27 +28,18 @@ const moveToTop = (quests: Quest[], updated: Quest) => [
   ...quests.filter((q) => q.id !== updated.id),
 ];
 
-// Unlocks any trophies the new state qualifies for, pays out their restores
-// and folds them into the message.
+// Unlocks any trophies the new state qualifies for and folds them into the message.
 function withTrophies(state: AppState, today: DateKey, message: string | null): Transition {
   const earned = newlyEarned(state.quests, Object.keys(state.trophies), today);
   if (earned.length === 0) return { state, message };
 
   const trophies = { ...state.trophies };
-  let bonus = 0;
-  for (const trophy of earned) {
-    trophies[trophy.key] = today;
-    bonus += trophy.restores;
-  }
-
+  for (const trophy of earned) trophies[trophy.key] = today;
   const names = earned.map((t) => t.title).join(", ");
-  const reward = bonus > 0 ? ` (+${bonus} ${bonus === 1 ? "restore" : "restores"})` : "";
 
   return {
-    state: { ...state, trophies, restores: state.restores + bonus },
-    message: message
-      ? `${message} · Trophy: ${names}${reward}`
-      : `Trophy unlocked: ${names}${reward}`,
+    state: { ...state, trophies },
+    message: message ? `${message} · Trophy: ${names}` : `Trophy unlocked: ${names}`,
   };
 }
 
@@ -60,11 +50,7 @@ export function addQuest(
   id: string,
 ): Transition {
   const quest = createQuest(input, today, id);
-  return withTrophies(
-    { ...state, quests: [quest, ...state.quests] },
-    today,
-    `${named(quest)} quest created`,
-  );
+  return withTrophies({ ...state, quests: [quest, ...state.quests] }, today, null);
 }
 
 export function checkInQuest(state: AppState, id: string, today: DateKey): Transition {
@@ -72,10 +58,10 @@ export function checkInQuest(state: AppState, id: string, today: DateKey): Trans
   const earned = domain.restoresEarnedOnCheckIn(updated, today);
   const message =
     earned === 0
-      ? `${named(updated)} checked in. Nice one!`
+      ? "Checked in. Nice one!"
       : updated.kind === "fixed"
-        ? `${named(updated)} quest complete! +1 restore`
-        : `${named(updated)} hit a ${INFINITE_REWARD_EVERY}-day streak! +1 restore`;
+        ? "Quest complete! +1 restore"
+        : `${INFINITE_REWARD_EVERY}-day streak! +1 restore`;
 
   return withTrophies(
     { ...state, quests: moveToTop(state.quests, updated), restores: state.restores + earned },
@@ -89,7 +75,7 @@ export function restoreStreak(state: AppState, id: string, today: DateKey): Tran
   return withTrophies(
     { ...state, quests: replace(state.quests, result.quest), restores: result.restores },
     today,
-    `${named(result.quest)} streak restored`,
+    "Streak restored",
   );
 }
 
@@ -98,7 +84,7 @@ export function restartQuest(state: AppState, id: string, today: DateKey): Trans
   return withTrophies(
     { ...state, quests: replace(state.quests, updated) },
     today,
-    `${named(updated)} restarted. Fresh start!`,
+    "Fresh start",
   );
 }
 
@@ -106,7 +92,7 @@ export function holdQuest(state: AppState, id: string, today: DateKey): Transiti
   const updated = domain.holdQuest(find(state, id), today);
   return {
     state: { ...state, quests: replace(state.quests, updated) },
-    message: `${named(updated)} quest on hold`,
+    message: "Quest on hold",
   };
 }
 
@@ -114,14 +100,29 @@ export function resumeQuest(state: AppState, id: string, today: DateKey): Transi
   const updated = domain.resumeQuest(find(state, id), today);
   return {
     state: { ...state, quests: replace(state.quests, updated) },
-    message: `${named(updated)} quest resumed`,
+    message: "Welcome back. Quest resumed",
   };
 }
 
-export function deleteQuest(state: AppState, id: string): Transition {
+export function editQuest(
+  state: AppState,
+  id: string,
+  patch: QuestPatch,
+  today: DateKey,
+): Transition {
   const quest = find(state, id);
+  const updated = applyEdit(quest, patch, today);
+  if (updated === quest) return { state, message: null }; // nothing changed
+  return withTrophies(
+    { ...state, quests: replace(state.quests, updated) },
+    today,
+    "Quest updated",
+  );
+}
+
+export function deleteQuest(state: AppState, id: string): Transition {
   return {
     state: { ...state, quests: state.quests.filter((q) => q.id !== id) },
-    message: `${named(quest)} quest deleted`,
+    message: null,
   };
 }

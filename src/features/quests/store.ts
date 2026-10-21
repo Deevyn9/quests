@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { NewQuestInput } from "@/lib/domain/create";
 import { todayIn } from "@/lib/domain/dates";
+import type { QuestPatch } from "@/lib/domain/edit";
 import * as moves from "@/lib/domain/transitions";
 import { EMPTY_STATE, type AppState, type Transition } from "@/lib/domain/transitions";
 import type { DateKey } from "@/lib/domain/types";
@@ -15,6 +16,7 @@ export type QuestApi = {
   restart: (id: string, today: DateKey) => Promise<void>;
   hold: (id: string, today: DateKey) => Promise<void>;
   resume: (id: string, today: DateKey) => Promise<void>;
+  edit: (id: string, patch: QuestPatch, today: DateKey) => Promise<void>;
   remove: (id: string) => Promise<void>;
   load: () => Promise<AppState>;
 };
@@ -31,8 +33,9 @@ export type QuestState = AppState & {
   restartQuest: (id: string) => void;
   holdQuest: (id: string) => void;
   resumeQuest: (id: string) => void;
+  editQuest: (id: string, patch: QuestPatch) => void;
   deleteQuest: (id: string) => void;
-    resync: (conflict: boolean) => Promise<void>;
+  resync: (conflict: boolean) => Promise<void>;
   notify: (message: string) => void;
   dismissToast: () => void;
 };
@@ -140,13 +143,22 @@ export const createQuestStore = (today: () => DateKey = browserToday, initialApi
         );
       },
 
+      // Throws when the change isn't allowed; the edit dialog shows the message.
+      editQuest: (id, patch) => {
+        const now = today();
+        apply(
+          (s) => moves.editQuest(s, id, patch, now),
+          (server) => server.edit(id, patch, now),
+        );
+      },
+
       deleteQuest: (id) =>
         tryApply(
           (s) => moves.deleteQuest(s, id),
           (server) => server.remove(id),
         ),
-        
-            // After queued offline changes have been sent: show what the server really has.
+
+      // After queued offline changes have been sent: show what the server really has.
       // Only says something when a queued change had to be dropped.
       resync: async (conflict) => {
         const server = api;

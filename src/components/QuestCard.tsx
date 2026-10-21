@@ -16,6 +16,10 @@ import { useLingering } from "@/lib/useLingering";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FrostOverlay } from "./FrostOverlay";
 import { FlameIcon, RestoreIcon, SnowflakeIcon } from "./Icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PencilEdit02Icon } from "@hugeicons/core-free-icons";
+
+import { EditQuestModal } from "./EditQuestModal";
 
 const BOX_BASE =
   "relative grid aspect-square w-full min-w-0 place-items-center rounded-lg border transition-colors duration-500";
@@ -62,6 +66,9 @@ const ACTION =
 
 const DELETE =
   "inline-flex items-center gap-1.5 rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50";
+
+const EDIT =
+  "inline-flex h-10 items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-4 text-sm font-medium text-xs text-zinc-900 transition hover:bg-zinc-50 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 max-sm:w-10 max-sm:px-0";
 
 function statusLabel(status: QuestStatus): string {
   switch (status.state) {
@@ -207,6 +214,7 @@ export function DayCell({
 export const QuestCard = memo(function QuestCard({ quest }: { quest: Quest }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [burst, setBurst] = useState(0);
+  const [editing, setEditing] = useState(false);
 
   const today = useQuestStore((s) => s.today());
   const restores = useQuestStore((s) => s.restores);
@@ -344,6 +352,20 @@ export const QuestCard = memo(function QuestCard({ quest }: { quest: Quest }) {
           )}
           <button
             type="button"
+            aria-label={`Edit ${quest.title}`}
+            onClick={() => setEditing(true)}
+            className={EDIT}
+          >
+            <HugeiconsIcon
+              icon={PencilEdit02Icon}
+              size={18}
+              strokeWidth={1.5}
+              aria-hidden
+            />
+            <span className="mt-0.5 max-sm:sr-only">Edit</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setConfirmingDelete(true)}
             className={DELETE}
           >
@@ -363,6 +385,12 @@ export const QuestCard = memo(function QuestCard({ quest }: { quest: Quest }) {
           deleteQuest(quest.id);
         }}
         onCancel={() => setConfirmingDelete(false)}
+      />
+
+      <EditQuestModal
+        quest={quest}
+        open={editing}
+        onClose={() => setEditing(false)}
       />
     </article>
   );

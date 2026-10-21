@@ -11,6 +11,7 @@ const makeApi = (over: Partial<QuestApi> = {}): QuestApi => ({
   restart: vi.fn().mockResolvedValue(undefined),
   hold: vi.fn().mockResolvedValue(undefined),
   resume: vi.fn().mockResolvedValue(undefined),
+  edit: vi.fn().mockResolvedValue(undefined),
   remove: vi.fn().mockResolvedValue(undefined),
   load: vi.fn().mockResolvedValue({ quests: [], restores: 0, trophies: {} }),
   ...over,
@@ -228,5 +229,64 @@ describe("holding", () => {
 
     expect(api.hold).toHaveBeenCalledWith(id, "2026-09-01");
     expect(api.resume).toHaveBeenCalledWith(id, "2026-09-01");
+  });
+});
+
+describe("refreshing after offline changes", () => {
+  it("replaces the screen with the server's data, quietly when nothing was dropped", async () => {
+    const api = makeApi({
+      load: vi.fn().mockResolvedValue({ quests: [], restores: 7, trophies: {} }),
+    });
+    const { store } = setup("2026-09-01", api);
+
+    await store.getState().resync(false);
+
+    expect(store.getState().restores).toBe(7);
+    expect(store.getState().toast).toBeNull();
+  });
+
+  it("tells the user when a change made offline had to be dropped", async () => {
+    const { store } = setup("2026-09-01", makeApi());
+    await store.getState().resync(true);
+    expect(store.getState().toast?.message).toMatch(/offline/i);
+  });
+
+  it("keeps what's on screen if the refresh fails", async () => {
+    const api = makeApi({ load: vi.fn().mockRejectedValue(new Error("offline")) });
+    const { store } = setup("2026-09-01", api);
+    store.getState().addQuest(input);
+
+    await store.getState().resync(true);
+
+    expect(store.getState().quests).toHaveLength(1);
+  });
+
+  it("shows a message on request", () => {
+    const { store } = setup();
+    store.getState().notify("Hello");
+    expect(store.getState().toast?.message).toBe("Hello");
+  });
+
+  it("edits a quest on screen at once and saves only the patch", () => {
+    const api = makeApi();
+    const { store } = setup("2026-09-01", api);
+    store.getState().addQuest(input);
+    const id = store.getState().quests[0].id;
+
+    store.getState().editQuest(id, { title: "Read more" });
+
+    expect(store.getState().quests[0].title).toBe("Read more");
+    expect(api.edit).toHaveBeenCalledWith(id, { title: "Read more" }, "2026-09-01");
+  });
+
+  it("throws on a change that isn't allowed and saves nothing", () => {
+    const api = makeApi();
+    const { store } = setup("2026-09-05", api);
+    store.getState().addQuest(input);
+    const id = store.getState().quests[0].id;
+    store.getState().checkInQuest(id);
+
+    expect(() => store.getState().editQuest(id, { title: " " })).toThrow(/name/i);
+    expect(api.edit).not.toHaveBeenCalled();
   });
 });

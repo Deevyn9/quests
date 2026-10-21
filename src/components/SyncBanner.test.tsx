@@ -13,6 +13,7 @@ const server = (over: Partial<QuestApi> = {}): QuestApi => ({
   restart: vi.fn().mockResolvedValue(undefined),
   hold: vi.fn().mockResolvedValue(undefined),
   resume: vi.fn().mockResolvedValue(undefined),
+  edit: vi.fn().mockResolvedValue(undefined),
   remove: vi.fn().mockResolvedValue(undefined),
   load: vi.fn().mockResolvedValue({ quests: [], restores: 0, trophies: {} }),
   ...over,
