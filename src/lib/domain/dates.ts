@@ -21,16 +21,15 @@ export function weekdayOf(key: DateKey): number {
 
 export const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function weekdayShort(key: DateKey): string {
-  return WEEKDAY_SHORT[weekdayOf(key)];
+export const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// "Mon 9 Nov"
+export function formatDay(key: DateKey): string {
+  return `${WEEKDAY_SHORT[weekdayOf(key)]} ${Number(key.slice(8, 10))} ${MONTH_SHORT[Number(key.slice(5, 7)) - 1]}`;
 }
 
-const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-// "2026-09-01" -> "1 Sep 2026". Built by hand so it never depends on locale or timezone.
-export function formatDay(key: DateKey): string {
-  const [y, m, d] = key.split("-").map(Number);
-  return `${d} ${MONTH_SHORT[m - 1]} ${y}`;
+export function weekdayShort(key: DateKey): string {
+  return WEEKDAY_SHORT[weekdayOf(key)];
 }
 
 // "What day is it for this user?" The server's clock is never used.

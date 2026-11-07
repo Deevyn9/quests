@@ -42,23 +42,6 @@ function streakOf(q: Quest): number {
   return streak;
 }
 
-// The longest run of covered days over the life of the quest.
-export function longestStreak(q: Quest): number {
-  const covered = coveredDays(q);
-  const last = lastCovered(q);
-  let best = 0;
-  let run = 0;
-  for (let d = q.startDate; d <= last; d = addDays(d, 1)) {
-    if (covered.has(d)) {
-      run++;
-      best = Math.max(best, run);
-    } else if (!isOff(q, d)) {
-      run = 0;
-    }
-  }
-  return best;
-}
-
 // Days after the last covered day and before today that were not off days.
 function missedDayList(q: Quest, today: DateKey): DateKey[] {
   const missed: DateKey[] = [];
@@ -92,11 +75,11 @@ function isCompleted(q: Quest): boolean {
 }
 
 export function getStatus(q: Quest, today: DateKey): QuestStatus {
+  if (today < q.startDate) return { state: "upcoming", startsOn: q.startDate };
+
   const streak = streakOf(q);
   if (isCompleted(q)) return { state: "completed", streak };
-  // On hold from the moment a hold is set, even if it only starts tomorrow
-  // (when today was already checked in).
-  if (q.pausedFrom !== null) return { state: "paused", streak };
+  if (q.pausedFrom !== null && today >= q.pausedFrom) return { state: "paused", streak };
 
   const missedDays = missedDayList(q, today).length;
   if (missedDays === 0) return { state: "active", streak };

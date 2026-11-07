@@ -128,4 +128,18 @@ describe("editQuest: which quests can be rescheduled", () => {
     const held = active({ pausedFrom: "2026-09-03" });
     expect(editQuest(held, { durationDays: 10 }, "2026-09-04").durationDays).toBe(10);
   });
+
+describe("editQuest: a quest that hasn't started", () => {
+  const later = makeQuest({ startDate: "2026-09-10", checkIns: [] });
+
+  it("can be renamed, lengthened and given skipped days", () => {
+    const edited = editQuest(later, { title: "Run", durationDays: 3, skipWeekdays: [0] }, "2026-09-02");
+    expect(edited).toMatchObject({ title: "Run", durationDays: 3, skipWeekdays: [0], startDate: "2026-09-10" });
+  });
+
+  it("has no days used up yet, so any length is fine", () => {
+    expect(daysSoFar(later, "2026-09-02")).toBe(0);
+    expect(editQuest(later, { durationDays: 1 }, "2026-09-02").durationDays).toBe(1);
+  });
+});
 });

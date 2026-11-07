@@ -38,4 +38,11 @@ describe("transitions", () => {
   it("rejects editing a quest that does not exist", () => {
     expect(() => editQuest(EMPTY_STATE, "nope", { title: "x" }, "2026-09-01")).toThrow(/not found/i);
   });
+
+  it("creates a quest that starts later without earning a check-in or streak", () => {
+    const { state } = addQuest(EMPTY_STATE, { ...input, startDate: "2026-09-04" }, "2026-09-01", "id1");
+    expect(state.quests[0].startDate).toBe("2026-09-04");
+    expect(() => checkInQuest(state, "id1", "2026-09-01")).toThrow(/not active/i);
+    expect(checkInQuest(state, "id1", "2026-09-04").state.quests[0].checkIns).toEqual(["2026-09-04"]);
+  });
 });

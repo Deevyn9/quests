@@ -45,4 +45,40 @@ describe("createQuest", () => {
       createQuest({ ...input, durationDays: 1, skipWeekdays: [0, 6] }, "2026-09-06", "id1"),
     ).toThrow(/skipped/i);
   });
+
+  describe("start date", () => {
+    it("can start in the future", () => {
+      const q = createQuest({ ...input, startDate: "2026-09-04" }, "2026-09-01", "id1");
+      expect(q.startDate).toBe("2026-09-04");
+    });
+
+    it("starts today when no date is given", () => {
+      expect(createQuest(input, "2026-09-01", "id1").startDate).toBe("2026-09-01");
+    });
+
+    it("rejects a start in the past", () => {
+      expect(() => createQuest({ ...input, startDate: "2026-08-31" }, "2026-09-01", "id1")).toThrow(/past/i);
+    });
+
+    it("rejects a start more than a year ahead", () => {
+      expect(() => createQuest({ ...input, startDate: "2027-09-02" }, "2026-09-01", "id1")).toThrow(/within 365/);
+      expect(createQuest({ ...input, startDate: "2027-09-01" }, "2026-09-01", "id1").startDate).toBe("2027-09-01");
+    });
+
+    it.each(["tomorrow", "2026-9-4", "2026-02-31", "", 5])("rejects %j as a start date", (bad) => {
+      expect(() => createQuest({ ...input, startDate: bad as never }, "2026-09-01", "id1")).toThrow(/invalid/i);
+    });
+
+    it("treats a missing or null start date as today", () => {
+      expect(createQuest({ ...input, startDate: null as never }, "2026-09-01", "id1").startDate).toBe("2026-09-01");
+    });
+
+    it("checks for a scheduled day from the start date, not from today", () => {
+      // 1 Sep 2026 is a Tuesday; a 1-day quest on Tuesdays that skips Tuesdays is impossible,
+      // but starting on Wednesday makes it fine.
+      const skipTuesday = { ...input, durationDays: 1, skipWeekdays: [2] };
+      expect(() => createQuest({ ...skipTuesday, startDate: "2026-09-08" }, "2026-09-01", "id1")).toThrow(/skipped/i);
+      expect(createQuest({ ...skipTuesday, startDate: "2026-09-02" }, "2026-09-01", "id1").startDate).toBe("2026-09-02");
+    });
+  });
 });

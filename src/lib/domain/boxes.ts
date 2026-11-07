@@ -52,7 +52,16 @@ function pageAround(boxes: Box[], today: DateKey): Box[] {
   return boxes.slice(start, start + PAGE_SIZE);
 }
 
+const UPCOMING_PREVIEW_DAYS = 7;
+
 export function boxesFor(q: Quest, today: DateKey): Box[] {
+  if ((q.kind === "infinite" || q.durationDays === null) && q.startDate > today) {
+    // Not started yet: preview the first week.
+    return Array.from({ length: UPCOMING_PREVIEW_DAYS }, (_, i) =>
+      makeBox(q, addDays(q.startDate, i), i + 1, today),
+    );
+  }
+
   if (q.kind === "infinite" || q.durationDays === null) {
     return infiniteDays(q, today)
       .map((date, i) => makeBox(q, date, i + 1, today))

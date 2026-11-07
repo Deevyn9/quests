@@ -4,6 +4,7 @@ import { makeQuest as make } from "./fixtures";
 import {
   checkIn,
   getStatus,
+  holdQuest,
   restartQuest,
   restoreQuest,
   restoresEarnedOnCheckIn,
@@ -166,4 +167,26 @@ describe("skipped days", () => {
     });
     expect(getStatus(q, "2026-09-11").state).toBe("completed");
   });
+
+describe("a quest that starts later", () => {
+  const later = make({ startDate: "2026-09-05", durationDays: 7 });
+
+  it("is upcoming until its start day", () => {
+    expect(getStatus(later, "2026-09-01")).toEqual({ state: "upcoming", startsOn: "2026-09-05" });
+    expect(getStatus(later, "2026-09-04").state).toBe("upcoming");
+  });
+
+  it("becomes active on the start day, with nothing missed", () => {
+    expect(getStatus(later, "2026-09-05")).toEqual({ state: "active", streak: 0 });
+  });
+
+  it("can't be checked in or held before it starts", () => {
+    expect(() => checkIn(later, "2026-09-02")).toThrow(/not active/i);
+    expect(() => holdQuest(later, "2026-09-02")).toThrow();
+  });
+
+  it("can be checked in on the start day", () => {
+    expect(checkIn(later, "2026-09-05").checkIns).toEqual(["2026-09-05"]);
+  });
+});
 });

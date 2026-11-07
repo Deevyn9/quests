@@ -73,4 +73,23 @@ describe("boxesFor", () => {
     expect(boxes[0].state).toBe("checked");
     expect(boxes.slice(1).every((b) => b.date === null && b.state === "upcoming")).toBe(true);
   });
+
+  it("shows a fixed quest that hasn't started as all upcoming days from its start date", () => {
+    const boxes = boxesFor(makeQuest({ startDate: "2026-09-05", durationDays: 3 }), "2026-09-01");
+    expect(boxes.map((b) => [b.date, b.state])).toEqual([
+      ["2026-09-05", "upcoming"],
+      ["2026-09-06", "upcoming"],
+      ["2026-09-07", "upcoming"],
+    ]);
+  });
+
+  it("previews the first week of an infinite quest that hasn't started", () => {
+    const boxes = boxesFor(
+      makeQuest({ kind: "infinite", durationDays: null, startDate: "2026-09-05" }),
+      "2026-09-01",
+    );
+    expect(boxes).toHaveLength(7);
+    expect(boxes[0]).toMatchObject({ date: "2026-09-05", day: 1, state: "upcoming" });
+    expect(boxes.every((b) => b.state === "upcoming")).toBe(true);
+  });
 });
