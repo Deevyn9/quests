@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useQuestStore } from "@/features/quests/store";
@@ -7,40 +7,60 @@ import { NewQuestModal } from "./NewQuestModal";
 
 const initialState = useQuestStore.getState();
 
-beforeEach(() => {
-  useQuestStore.setState({ ...initialState, ready: true }, true);
+function open() {
+  // The store's actions read the real clock, so pin it.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-07T12:00:00Z"));
+  useQuestStore.setState({ ...initialState, ready: true, today: () => "2026-11-07" }, true);
+  const onClose = vi.fn();
+  render(<NewQuestModal open onClose={onClose} />);
+  return { onClose };
+}
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
 });
-afterEach(cleanup);
 
-describe("NewQuestModal custom length", () => {
-  it("keeps the days field out of reach until Custom is chosen", async () => {
-    const user = userEvent.setup();
-    render(<NewQuestModal open onClose={() => {}} />);
-    const field = screen.getByLabelText("Number of days");
+describe("NewQuestModal start date", () => {
+  it("starts today by default", async () => {
+    const { onClose } = open();
+    await userEvent.type(screen.getByLabelText("Quest name"), "Read");
+    await userEvent.click(screen.getByRole("button", { name: "Create quest" }));
 
-    expect(field.closest("[inert]")).not.toBeNull();
-
-    await user.click(screen.getByRole("button", { name: "Custom" }));
-    expect(field.closest("[inert]")).toBeNull();
-
-    await user.click(screen.getByRole("button", { name: "Week" }));
-    expect(field.closest("[inert]")).not.toBeNull();
+    expect(useQuestStore.getState().quests[0].startDate).toBe("2026-11-07");
+    expect(onClose).toHaveBeenCalled();
   });
 
-  it("creates a quest with the custom number of days", async () => {
-    const user = userEvent.setup();
-    render(<NewQuestModal open onClose={() => {}} />);
+  it("starts tomorrow when switched off", async () => {
+    open();
+    await userEvent.type(screen.getByLabelText("Quest name"), "Read");
+    await userEvent.click(screen.getByRole("switch", { name: "Start immediately" }));
+    await userEvent.click(screen.getByRole("button", { name: "Create quest" }));
 
-    await user.type(screen.getByLabelText(/quest name/i), "Stretch");
-    await user.click(screen.getByRole("button", { name: "Custom" }));
-    const field = screen.getByLabelText("Number of days");
-    await user.clear(field);
-    await user.type(field, "10");
-    await user.click(screen.getByRole("button", { name: /create quest/i }));
+    expect(useQuestStore.getState().quests[0].startDate).toBe("2026-11-08");
+  });
 
-    expect(useQuestStore.getState().quests[0]).toMatchObject({
-      title: "Stretch",
-      durationDays: 10,
-    });
+  it("starts on a day picked from the calendar", async () => {
+    open();
+    await userEvent.type(screen.getByLabelText("Quest name"), "Read");
+    await userEvent.click(screen.getByRole("switch", { name: "Start immediately" }));
+    await userEvent.click(screen.getByRole("button", { name: /pick a date/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Fri 20 Nov 2026" }));
+    await userEvent.click(screen.getByRole("button", { name: "Create quest" }));
+
+    expect(useQuestStore.getState().quests[0].startDate).toBe("2026-11-20");
+  });
+
+  it("asks for a date instead of creating when the calendar is open but empty", async () => {
+    const { onClose } = open();
+    await userEvent.type(screen.getByLabelText("Quest name"), "Read");
+    await userEvent.click(screen.getByRole("switch", { name: "Start immediately" }));
+    await userEvent.click(screen.getByRole("button", { name: /pick a date/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Create quest" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/pick a start date/i);
+    expect(useQuestStore.getState().quests).toHaveLength(0);
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

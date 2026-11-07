@@ -3,6 +3,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useQuestStore } from "@/features/quests/store";
 import { useScrollLock } from "@/lib/useScrollLock";
+import {
+  START_IMMEDIATELY,
+  startDateFor,
+  type StartChoice,
+} from "@/lib/domain/start";
+import { StartField } from "./StartField";
 
 const TIMEFRAMES = [
   { id: "day", label: "Day" },
@@ -66,7 +72,8 @@ function ModalBody({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [daysFocused, setDaysFocused] = useState(false);
   const daysFloated = daysFocused || customDays !== "";
-
+  const today = useQuestStore((s) => s.today());
+  const [start, setStart] = useState<StartChoice>(START_IMMEDIATELY);
   const customOpen = timeframe === "custom";
 
   useEffect(() => {
@@ -91,6 +98,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
         kind: timeframe === "infinite" ? "infinite" : "fixed",
         durationDays: durationFor(timeframe, customDays),
         skipWeekdays: skipDays,
+        startDate: startDateFor(start, today),
       });
       onClose();
     } catch (err) {
@@ -109,7 +117,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="new-quest-heading"
-        className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-xl border border-zinc-200 bg-white p-7"
+        className="max-h-full w-full max-w-md overflow-y-auto rounded-xl border border-zinc-200 bg-white p-7"
       >
         <h2 id="new-quest-heading" className="text-xl font-semibold">
           New quest
@@ -199,6 +207,8 @@ function ModalBody({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           </div>
+
+          <StartField today={today} value={start} onChange={setStart} />
 
           <div className="flex flex-col gap-3">
             <span className="text-sm font-medium">Skip these days</span>

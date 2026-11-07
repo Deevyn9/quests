@@ -81,6 +81,8 @@ function statusLabel(status: QuestStatus): string {
       return `Streak broken · missed ${status.missedDays} ${status.missedDays === 1 ? "day" : "days"}`;
     case "lapsed":
       return "Too long without a check-in";
+    case "upcoming":
+      return "Not started yet";
   }
 }
 
