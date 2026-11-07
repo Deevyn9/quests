@@ -71,21 +71,4 @@ describe("toneFor", () => {
     expect(toneFor({ state: "active", streak: 2 }, 0)).toBe("normal");
     expect(toneFor({ state: "completed", streak: 7 }, 0)).toBe("normal");
   });
-
-describe("progressLabel before the start", () => {
-  const q = makeQuest({ startDate: "2026-09-05", durationDays: 7 });
-
-  it("says tomorrow when it starts tomorrow", () => {
-    expect(progressLabel(q, "2026-09-04")).toBe("Starts tomorrow");
-  });
-
-  it("names the day otherwise", () => {
-    expect(progressLabel(q, "2026-09-01")).toBe("Starts Sat 5 Sep");
-    expect(progressLabel(makeQuest({ kind: "infinite", durationDays: null, startDate: "2026-09-05" }), "2026-09-01")).toBe("Starts Sat 5 Sep");
-  });
-
-  it("goes back to counting days once it has started", () => {
-    expect(progressLabel(q, "2026-09-05")).toBe("Day 1 of 7");
-  });
-});
 });

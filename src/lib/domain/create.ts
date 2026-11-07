@@ -7,7 +7,7 @@ export type NewQuestInput = {
   kind: QuestKind;
   durationDays: number | null;
   skipWeekdays: number[];
-  startDate?: DateKey; // defaults to today; can be up to MAX_START_AHEAD_DAYS in the future
+  startDate?: DateKey;
 };
 
 export const MAX_DURATION_DAYS = 365;
@@ -37,14 +37,14 @@ export function createQuest(input: NewQuestInput, today: DateKey, id: string): Q
   }
 
   const startDate = input.startDate ?? today;
-  assertStartDate(startDate, today);
+assertStartDate(startDate, today);
 
   const quest: Quest = {
     id,
     title,
     kind: input.kind,
     durationDays: null,
-    startDate,
+    startDate: today,
     checkIns: [],
     restoredDates: [],
     skipWeekdays,
@@ -62,7 +62,7 @@ export function createQuest(input: NewQuestInput, today: DateKey, id: string): Q
 
   // A quest whose every day is skipped could never be completed.
   const hasScheduledDay = Array.from({ length: days }, (_, i) =>
-    addDays(startDate, i),
+    addDays(today, i),
   ).some((d) => !isSkipped(quest, d));
   if (!hasScheduledDay) throw new Error("Every day in this quest would be skipped");
 
