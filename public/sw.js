@@ -2,13 +2,14 @@
 //
 // What it keeps, and why:
 //  - the offline page and the build's static files (scripts, fonts, icons): identical
-//    for every user, so safe to share and cache
+//    for every user, so safe to share and cache. Files are fetched from the network first;
+//    the saved copy only serves when offline
 //  - one copy of the home page, so the app can open without a connection. It's
 //    replaced on every online visit and deleted on sign-out (see CLEAR_PAGES), so a
 //    shared device never shows the previous person's quests
 //
 // What it never touches: POSTs (saving changes), /api/ (sign-in), other websites.
-const STATIC = "quests-static-v1";
+const STATIC = "quests-static-v2"; // v2 drops copies saved by the old cache-first worker
 const PAGES = "quests-pages-v1";
 const OFFLINE_URL = "/offline.html";
 const HOME = "/";
@@ -99,16 +100,18 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (isStaticAsset(url)) {
+    // Network first, so a changed file always wins: a dev server or a new deploy is never
+    // stuck behind an old copy. The saved copy is only for when the network is gone.
     event.respondWith(
       caches.open(STATIC).then((cache) =>
-        cache.match(request).then(
-          (hit) =>
-            hit ||
-            fetch(request).then((response) => {
-              if (response.status === 200) cache.put(request, response.clone());
-              return response;
-            }),
-        ),
+        fetch(request)
+          .then((response) => {
+            if (response.status === 200) cache.put(request, response.clone());
+            return response;
+          })
+          .catch(() =>
+            cache.match(request).then((hit) => hit || Response.error()),
+          ),
       ),
     );
   }
