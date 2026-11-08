@@ -117,7 +117,7 @@ function ModalBody({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="new-quest-heading"
-        className="max-h-full w-full max-w-md overflow-y-auto rounded-xl border border-zinc-200 bg-white p-7"
+        className="max-h-full w-full max-w-lg overflow-y-auto rounded-xl border border-zinc-200 bg-white p-7"
       >
         <h2 id="new-quest-heading" className="text-xl font-semibold">
           New quest
