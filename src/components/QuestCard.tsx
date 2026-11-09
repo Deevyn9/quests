@@ -21,9 +21,6 @@ import { PencilEdit02Icon } from "@hugeicons/core-free-icons";
 
 import { EditQuestModal } from "./EditQuestModal";
 
-const BOX_BASE =
-  "relative grid aspect-square w-full min-w-0 place-items-center rounded-lg border transition-colors duration-500";
-
 // A crossed-off day fades its weekday so the X reads cleanly on top of it.
 const BOX_STYLES: Record<Box["state"], string> = {
   checked: "border-zinc-300 bg-white text-zinc-300",
@@ -61,14 +58,21 @@ const TONE_TEXT: Record<Tone, string> = {
   dead: "text-red-700",
 };
 
+const BOX_BASE =
+  "relative grid aspect-square w-full min-w-0 place-items-center rounded-control border transition-colors duration-500";
+
 const ACTION =
-  "inline-flex items-center gap-1.5 rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs font-medium transition hover:bg-zinc-50 disabled:opacity-50";
+  "inline-flex h-8 items-center gap-1.5 rounded-control border border-zinc-300 bg-white px-3 text-xs font-medium transition duration-300 ease-spring hover:bg-zinc-50 active:scale-95 disabled:opacity-50";
 
 const DELETE =
-  "inline-flex items-center gap-1.5 rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50";
+  "inline-flex h-8 items-center gap-1.5 rounded-control border border-red-300 bg-white px-3 text-xs font-medium text-red-600 transition duration-300 ease-spring hover:bg-red-50 active:scale-95";
 
 const EDIT =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-4 text-sm font-medium text-xs text-zinc-900 transition hover:bg-zinc-50 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 max-sm:w-10 max-sm:px-0";
+  "inline-flex h-8 items-center justify-center gap-1.5 rounded-control border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-900 transition duration-300 ease-spring hover:bg-zinc-50 active:scale-95 max-sm:w-8 max-sm:px-0";
+
+// Quests that haven't started yet
+const UPCOMING_CARD = "border-violet-300 bg-violet-50";
+const UPCOMING_TEXT = "text-violet-700";
 
 function statusLabel(status: QuestStatus): string {
   switch (status.state) {
@@ -115,7 +119,7 @@ function HoldToggle({
     <button
       type="button"
       onClick={held ? onResume : onHold}
-      className={`inline-flex min-w-29 items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-500 ${
+      className={`rounded-control ease-spring inline-flex h-8 min-w-29 items-center justify-center gap-1.5 border px-3 text-xs font-medium transition duration-300 active:scale-95 ${
         held
           ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
           : "border-zinc-300 bg-white hover:bg-zinc-50"
@@ -200,7 +204,9 @@ export function DayCell({
         <div
           aria-hidden
           title={box.date ?? undefined}
-          className={`${BOX_BASE} ${style}`}
+          className={`${BOX_BASE} ${style} ${
+            box.state === "checked" && box.date === today ? "check-pop" : ""
+          }`}
         >
           {face}
         </div>
@@ -229,6 +235,7 @@ export const QuestCard = memo(function QuestCard({ quest }: { quest: Quest }) {
 
   const status = getStatus(quest, today);
   const tone = toneFor(status, restores);
+  const upcoming = status.state === "upcoming";
   const boxes = boxesFor(quest, today);
   const canCheckIn = status.state === "active";
   const onHold = status.state === "paused";
@@ -252,7 +259,9 @@ export const QuestCard = memo(function QuestCard({ quest }: { quest: Quest }) {
   return (
     <article
       onClick={handleCardClick}
-      className={`relative flex flex-col gap-4 rounded-xl border p-5 transition-colors duration-500 ${TONE_CARD[tone]}`}
+      className={`rounded-surface relative flex flex-col gap-4 border p-5 transition-colors duration-500 ${
+        upcoming ? UPCOMING_CARD : TONE_CARD[tone]
+      }`}
     >
       {showFrost && <FrostOverlay burst={burst} active={onHold} />}
 
@@ -298,7 +307,9 @@ export const QuestCard = memo(function QuestCard({ quest }: { quest: Quest }) {
       <div className="relative z-10 flex flex-wrap items-center justify-between gap-2">
         <div>
           <p
-            className={`text-sm transition-colors duration-500 ${TONE_TEXT[tone]}`}
+            className={`text-sm transition-colors duration-500 ${
+              upcoming ? UPCOMING_TEXT : TONE_TEXT[tone]
+            }`}
           >
             <span
               key={onHold ? "frozen" : "live"}
@@ -360,11 +371,11 @@ export const QuestCard = memo(function QuestCard({ quest }: { quest: Quest }) {
           >
             <HugeiconsIcon
               icon={PencilEdit02Icon}
-              size={18}
+              size={16}
               strokeWidth={1.5}
               aria-hidden
             />
-            <span className="mt-0.5 max-sm:sr-only">Edit</span>
+            <span className="max-sm:sr-only">Edit</span>
           </button>
           <button
             type="button"
