@@ -22,7 +22,7 @@ import { clearLocalData } from "@/features/quests/cleanup";
 import { SyncBanner } from "./SyncBanner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Add01Icon } from "@hugeicons/core-free-icons";
-import { BUTTON_NEUTRAL } from "./formStyles";
+import { BUTTON_OUTLINE, BUTTON_PRIMARY } from "./formStyles";
 
 type Props = {
   user: { name: string | null } | null;
@@ -34,7 +34,10 @@ function ListSkeleton() {
   return (
     <div aria-busy="true" className="flex flex-col gap-4">
       {[0, 1].map((i) => (
-        <div key={i} className="h-40 animate-pulse rounded-xl bg-zinc-100" />
+        <div
+          key={i}
+          className="rounded-surface h-40 animate-pulse bg-zinc-100"
+        />
       ))}
     </div>
   );
@@ -132,7 +135,7 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
                   <button
                     type="button"
                     onClick={() => setModalOpen(true)}
-                    className={BUTTON_NEUTRAL}
+                    className={BUTTON_PRIMARY}
                   >
                     <HugeiconsIcon
                       icon={Add01Icon}
