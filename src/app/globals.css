@@ -166,3 +166,90 @@ body {
   appearance: none;
   margin: 0;
 }
+
+/* Paste everything below into src/app/globals.css, right after the line  @import "tailwindcss";  */
+
+/* Bouncy easing. Use it as  ease-spring  on transition classes, and  animate-pop-in  on
+   things that appear. The first value is a one-bounce curve for old browsers. */
+@theme {
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-pop-in: pop-in 600ms var(--ease-spring) both;
+  --animate-fade-in: fade-in 200ms ease-out both;
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* Browsers that support it get a real springy curve: it overshoots, then settles. */
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --ease-spring: linear(
+      0,
+      0.024,
+      0.089,
+      0.183,
+      0.296,
+      0.419,
+      0.544,
+      0.664,
+      0.776,
+      0.875,
+      0.96,
+      1.029,
+      1.083,
+      1.122,
+      1.147,
+      1.16,
+      1.163,
+      1.158,
+      1.146,
+      1.13,
+      1.111,
+      1.091,
+      1.071,
+      1.051,
+      1.034,
+      1.018,
+      1.004,
+      0.994,
+      0.985,
+      0.979,
+      0.976,
+      0.974,
+      0.973,
+      0.975,
+      0.977,
+      0.979,
+      0.982,
+      0.986,
+      0.989,
+      0.992,
+      0.995,
+      0.997,
+      1,
+      1.001,
+      1.003,
+      1.003,
+      1.004,
+      1.004,
+      1
+    );
+  }
+}

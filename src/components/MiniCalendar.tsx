@@ -6,13 +6,14 @@ import { useState } from "react";
 import { compareMonths, MONTH_NAMES, monthGrid, monthOf, shiftMonth, type MonthRef } from "@/lib/domain/calendar";
 import { formatDay } from "@/lib/domain/dates";
 import type { DateKey } from "@/lib/domain/types";
+import { ACCENT_ON } from "./formStyles";
 
 const WEEK_STARTS_ON = 0; // 0 = Sunday first, 1 = Monday first
 const WEEKDAY_INITIALS = ["S", "M", "T", "W", "T", "F", "S"];
 const HEADER = Array.from({ length: 7 }, (_, i) => WEEKDAY_INITIALS[(i + WEEK_STARTS_ON) % 7]);
 
 const NAV =
-  "grid size-8 place-items-center rounded-full text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent";
+  "grid size-9 place-items-center rounded-full border border-zinc-300 bg-white text-zinc-900 transition duration-300 ease-spring hover:bg-zinc-50 active:scale-90 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white motion-reduce:transition-none";
 
 export function MiniCalendar({
   selected,
@@ -34,8 +35,8 @@ export function MiniCalendar({
   const canGoForward = compareMonths(view, monthOf(max)) < 0;
 
   return (
-    <div className="rounded-lg border border-zinc-200 p-3" role="group" aria-label="Start date">
-      <div className="mb-2 flex items-center justify-between">
+    <div className="rounded-2xl border border-zinc-200 p-4" role="group" aria-label="Start date">
+      <div className="mb-3 flex items-center justify-between">
         <button
           type="button"
           aria-label="Previous month"
@@ -79,12 +80,12 @@ export function MiniCalendar({
               aria-label={`${formatDay(date)} ${date.slice(0, 4)}`}
               aria-pressed={isSelected}
               onClick={() => onSelect(date)}
-              className={`grid size-9 place-items-center rounded-full text-sm tabular-nums transition ${
+              className={`grid size-10 place-items-center rounded-xl text-sm tabular-nums transition duration-300 ease-spring motion-reduce:transition-none ${
                 isSelected
-                  ? "bg-zinc-900 text-white"
+                  ? `scale-110 font-medium ${ACCENT_ON}`
                   : disabled
                     ? "cursor-not-allowed text-zinc-300"
-                    : "hover:bg-zinc-100"
+                    : "hover:bg-zinc-100 active:scale-90"
               } ${date === today && !isSelected ? "ring-1 ring-zinc-300" : ""}`}
             >
               {Number(date.slice(8, 10))}

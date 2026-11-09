@@ -7,7 +7,7 @@ export type BoxState = "checked" | "restored" | "skipped" | "today" | "upcoming"
 // `date` is null for days that don't have a calendar date yet (the rest of a held quest).
 export type Box = { date: DateKey | null; day: number; weekday: string | null; state: BoxState };
 
-export const PAGE_SIZE = 28;
+export const PAGE_SIZE = 35;
 const INFINITE_WINDOW_DAYS = 14;
 
 function stateOf(q: Quest, date: DateKey, today: DateKey): BoxState {
