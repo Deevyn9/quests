@@ -14,7 +14,7 @@ export const FIELD =
 
 // Pills: all 40px tall. The selected one takes the accent colour.
 const PILL_BASE =
-  "inline-flex h-10 items-center justify-center gap-1.5 rounded-full border px-4 text-sm font-medium transition duration-300 ease-spring active:scale-95 motion-reduce:transition-none";
+  "inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border px-4 text-sm font-medium transition duration-300 ease-spring active:scale-95 motion-reduce:transition-none";
 
 export const pill = (selected: boolean) =>
   `${PILL_BASE} ${
@@ -33,4 +33,8 @@ export const BUTTON_SECONDARY =
 // The main action: an almost-white fill, so it stands out from the plain white Cancel
 // without adding another colour.
 export const BUTTON_PRIMARY =
+  "inline-flex h-10 items-center justify-center rounded-full bg-blue-600 px-5 text-sm font-medium text-white transition duration-300 ease-spring hover:bg-blue-700 active:scale-95 motion-reduce:transition-none";
+
+  // Near-white fill with a border: for the main page's "New quest" button
+export const BUTTON_NEUTRAL =
   "inline-flex h-10 items-center justify-center gap-2 rounded-full border border-zinc-300 bg-zinc-100 px-5 text-sm font-semibold text-zinc-900 transition duration-300 ease-spring hover:bg-zinc-200 active:scale-95 motion-reduce:transition-none";

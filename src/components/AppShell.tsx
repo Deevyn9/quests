@@ -20,6 +20,9 @@ import { InstallButton } from "./InstallButton";
 import { getSyncStatus } from "@/features/quests/activeSync";
 import { clearLocalData } from "@/features/quests/cleanup";
 import { SyncBanner } from "./SyncBanner";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Add01Icon } from "@hugeicons/core-free-icons";
+import { BUTTON_NEUTRAL } from "./formStyles";
 
 type Props = {
   user: { name: string | null } | null;
@@ -129,8 +132,14 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
                   <button
                     type="button"
                     onClick={() => setModalOpen(true)}
-                    className="h-10 rounded-full bg-zinc-900 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
+                    className={BUTTON_NEUTRAL}
                   >
+                    <HugeiconsIcon
+                      icon={Add01Icon}
+                      size={18}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                     New quest
                   </button>
                 </div>
