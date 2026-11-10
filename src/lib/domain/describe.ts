@@ -1,5 +1,5 @@
 import { infiniteDays } from "./boxes";
-import { WEEKDAY_SHORT } from "./dates";
+import { WEEKDAY_SHORT, daysBetween, formatDay } from "./dates";
 import { isSkipped, longestStreak, windowDays } from "./quest";
 import type { DateKey, Quest, QuestStatus } from "./types";
 
@@ -41,6 +41,10 @@ export function skipLabel(q: Quest): string | null {
 }
 
 export function progressLabel(q: Quest, today: DateKey): string {
+  if (today < q.startDate) {
+  return daysBetween(today, q.startDate) === 1 ? "Starts tomorrow" : `Starts ${formatDay(q.startDate)}`;
+}
+  
   if (q.kind === "infinite" || q.durationDays === null) {
     return `Day ${Math.max(1, infiniteDays(q, today).length)}`;
   }

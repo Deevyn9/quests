@@ -7,7 +7,7 @@ export type BoxState = "checked" | "restored" | "skipped" | "today" | "upcoming"
 // `date` is null for days that don't have a calendar date yet (the rest of a held quest).
 export type Box = { date: DateKey | null; day: number; weekday: string | null; state: BoxState };
 
-export const PAGE_SIZE = 28;
+export const PAGE_SIZE = 35;
 const INFINITE_WINDOW_DAYS = 14;
 
 function stateOf(q: Quest, date: DateKey, today: DateKey): BoxState {
@@ -53,6 +53,10 @@ function pageAround(boxes: Box[], today: DateKey): Box[] {
 }
 
 export function boxesFor(q: Quest, today: DateKey): Box[] {
+  if ((q.kind === "infinite" || q.durationDays === null) && q.startDate > today) {
+  return Array.from({ length: 7 }, (_, i) => makeBox(q, addDays(q.startDate, i), i + 1, today));
+}
+
   if (q.kind === "infinite" || q.durationDays === null) {
     return infiniteDays(q, today)
       .map((date, i) => makeBox(q, date, i + 1, today))

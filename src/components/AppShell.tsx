@@ -20,6 +20,9 @@ import { InstallButton } from "./InstallButton";
 import { getSyncStatus } from "@/features/quests/activeSync";
 import { clearLocalData } from "@/features/quests/cleanup";
 import { SyncBanner } from "./SyncBanner";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Add01Icon } from "@hugeicons/core-free-icons";
+import { BUTTON_OUTLINE, BUTTON_PRIMARY } from "./formStyles";
 
 type Props = {
   user: { name: string | null } | null;
@@ -31,7 +34,10 @@ function ListSkeleton() {
   return (
     <div aria-busy="true" className="flex flex-col gap-4">
       {[0, 1].map((i) => (
-        <div key={i} className="h-40 animate-pulse rounded-xl bg-zinc-100" />
+        <div
+          key={i}
+          className="rounded-surface h-40 animate-pulse bg-zinc-100"
+        />
       ))}
     </div>
   );
@@ -129,8 +135,14 @@ export function AppShell({ user, signInAction, signOutAction }: Props) {
                   <button
                     type="button"
                     onClick={() => setModalOpen(true)}
-                    className="h-10 rounded-full bg-zinc-900 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
+                    className={BUTTON_PRIMARY}
                   >
+                    <HugeiconsIcon
+                      icon={Add01Icon}
+                      size={18}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                     New quest
                   </button>
                 </div>

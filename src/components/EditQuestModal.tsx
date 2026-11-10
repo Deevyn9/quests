@@ -5,6 +5,12 @@ import { useQuestStore } from "@/features/quests/store";
 import { daysSoFar, type QuestPatch } from "@/lib/domain/edit";
 import { getStatus } from "@/lib/domain/quest";
 import type { Quest } from "@/lib/domain/types";
+import {
+  BUTTON_PRIMARY,
+  BUTTON_SECONDARY,
+  chip,
+  pill as basePill,
+} from "./formStyles";
 
 const TIMEFRAMES = [
   { id: "day", label: "Day" },
@@ -17,30 +23,38 @@ const TIMEFRAMES = [
 type TimeframeId = (typeof TIMEFRAMES)[number]["id"];
 
 const PRESET_DAYS = { day: 1, week: 7, month: 30 } as const;
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const WEEKDAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 function timeframeOf(q: Quest): TimeframeId {
   if (q.durationDays === null) return "infinite";
-  const preset = (Object.keys(PRESET_DAYS) as (keyof typeof PRESET_DAYS)[]).find(
-    (k) => PRESET_DAYS[k] === q.durationDays,
-  );
+  const preset = (
+    Object.keys(PRESET_DAYS) as (keyof typeof PRESET_DAYS)[]
+  ).find((k) => PRESET_DAYS[k] === q.durationDays);
   return preset ?? "custom";
 }
 
-function durationFor(timeframe: TimeframeId, customDays: string): number | null {
+function durationFor(
+  timeframe: TimeframeId,
+  customDays: string,
+): number | null {
   if (timeframe === "infinite") return null;
   if (timeframe === "custom") return Number(customDays);
   return PRESET_DAYS[timeframe];
 }
 
-const colors = (active: boolean) =>
-  active ? "bg-zinc-900 text-white" : "bg-zinc-100 hover:bg-zinc-200";
-
 const pill = (active: boolean) =>
-  `rounded-full px-3 py-1 text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${colors(active)}`;
+  `${basePill(active)} disabled:cursor-not-allowed disabled:opacity-40`;
 
 const dayChip = (active: boolean) =>
-  `grid size-9 place-items-center rounded-full text-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${colors(active)}`;
+  `${chip(active)} disabled:cursor-not-allowed disabled:opacity-40`;
 
 const sameDays = (a: number[], b: number[]) =>
   a.length === b.length && [...a].sort().join() === [...b].sort().join();
@@ -65,14 +79,17 @@ function ModalBody({ quest, onClose }: { quest: Quest; onClose: () => void }) {
 
   const [title, setTitle] = useState(quest.title);
   const [timeframe, setTimeframe] = useState<TimeframeId>(timeframeOf(quest));
-  const [customDays, setCustomDays] = useState(quest.durationDays?.toString() ?? "");
+  const [customDays, setCustomDays] = useState(
+    quest.durationDays?.toString() ?? "",
+  );
   const [daysFocused, setDaysFocused] = useState(false);
   const [skipDays, setSkipDays] = useState<number[]>(quest.skipWeekdays);
   const [error, setError] = useState<string | null>(null);
 
   // A finished or broken quest keeps its schedule; only the name can change.
   const state = getStatus(quest, today).state;
-  const locked = state === "completed" || state === "broken" || state === "lapsed";
+  const locked =
+    state === "completed" || state === "broken" || state === "lapsed";
   const minDays = daysSoFar(quest, today);
   const customOpen = timeframe === "custom";
   const daysFloated = daysFocused || customDays !== "";
@@ -86,7 +103,9 @@ function ModalBody({ quest, onClose }: { quest: Quest; onClose: () => void }) {
   }, [onClose]);
 
   function toggleDay(day: number) {
-    setSkipDays((days) => (days.includes(day) ? days.filter((d) => d !== day) : [...days, day]));
+    setSkipDays((days) =>
+      days.includes(day) ? days.filter((d) => d !== day) : [...days, day],
+    );
   }
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -98,7 +117,8 @@ function ModalBody({ quest, onClose }: { quest: Quest; onClose: () => void }) {
     if (!locked) {
       const days = durationFor(timeframe, customDays);
       if (days !== quest.durationDays) patch.durationDays = days;
-      if (!sameDays(skipDays, quest.skipWeekdays)) patch.skipWeekdays = skipDays;
+      if (!sameDays(skipDays, quest.skipWeekdays))
+        patch.skipWeekdays = skipDays;
     }
 
     if (Object.keys(patch).length === 0) {
@@ -116,7 +136,7 @@ function ModalBody({ quest, onClose }: { quest: Quest; onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-40 grid place-items-center bg-zinc-900/10 p-4 backdrop-blur-sm"
+      className="animate-fade-in fixed inset-0 z-40 grid place-items-center bg-zinc-900/10 p-4 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -125,7 +145,7 @@ function ModalBody({ quest, onClose }: { quest: Quest; onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-quest-heading"
-        className="max-h-full w-full max-w-md overflow-y-auto rounded-xl border border-zinc-200 bg-white p-6"
+        className="rounded-surface animate-pop-in max-h-full w-full max-w-lg overflow-y-auto border border-zinc-200 bg-white p-6"
       >
         <h2 id="edit-quest-heading" className="text-xl font-semibold">
           Edit quest
@@ -141,12 +161,12 @@ function ModalBody({ quest, onClose }: { quest: Quest; onClose: () => void }) {
               autoFocus
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="rounded-lg border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-900"
+              className="rounded-control border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-900"
             />
           </div>
 
           {locked && (
-            <p className="rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-600">
+            <p className="rounded-control bg-zinc-100 px-3 py-2 text-sm text-zinc-600">
               {state === "completed"
                 ? "This quest is complete, so only its name can change."
                 : "Restore or restart this quest to change its length or skipped days."}
@@ -157,7 +177,9 @@ function ModalBody({ quest, onClose }: { quest: Quest; onClose: () => void }) {
             <span className="text-sm font-medium">How long?</span>
             <div className="flex flex-wrap gap-2">
               {TIMEFRAMES.map((t) => {
-                const tooShort = t.id in PRESET_DAYS && PRESET_DAYS[t.id as keyof typeof PRESET_DAYS] < minDays;
+                const tooShort =
+                  t.id in PRESET_DAYS &&
+                  PRESET_DAYS[t.id as keyof typeof PRESET_DAYS] < minDays;
                 return (
                   <button
                     key={t.id}
@@ -177,7 +199,9 @@ function ModalBody({ quest, onClose }: { quest: Quest; onClose: () => void }) {
               inert={!customOpen}
               aria-hidden={!customOpen}
               className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${
-                customOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                customOpen
+                  ? "grid-rows-[1fr] opacity-100"
+                  : "grid-rows-[0fr] opacity-0"
               }`}
             >
               <div className="mt-3 overflow-hidden pt-3.5">
@@ -191,10 +215,12 @@ function ModalBody({ quest, onClose }: { quest: Quest; onClose: () => void }) {
                     disabled={locked}
                     aria-label="Number of days"
                     value={customDays}
-                    onChange={(e) => setCustomDays(e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) =>
+                      setCustomDays(e.target.value.replace(/\D/g, ""))
+                    }
                     onFocus={() => setDaysFocused(true)}
                     onBlur={() => setDaysFocused(false)}
-                    className={`h-full w-full rounded-lg border bg-transparent px-3.5 transition-colors outline-none disabled:opacity-40 ${
+                    className={`rounded-control h-full w-full border bg-transparent px-3.5 transition-colors outline-none disabled:opacity-40 ${
                       daysFocused ? "border-zinc-900" : "border-zinc-300"
                     }`}
                   />
@@ -220,7 +246,8 @@ function ModalBody({ quest, onClose }: { quest: Quest; onClose: () => void }) {
 
             {!locked && minDays > 1 && (
               <p className="text-xs text-zinc-500">
-                Already {minDays} days in, so the quest can't be shorter than that.
+                Already {minDays} days in, so the quest can&apos;t be shorter
+                than that.
               </p>
             )}
           </div>
@@ -243,7 +270,9 @@ function ModalBody({ quest, onClose }: { quest: Quest; onClose: () => void }) {
               ))}
             </div>
             {!locked && (
-              <p className="text-xs text-zinc-500">Changes apply from today. Past days stay as they were.</p>
+              <p className="text-xs text-zinc-500">
+                Changes apply from today. Past days stay as they were.
+              </p>
             )}
           </div>
 
@@ -254,13 +283,14 @@ function ModalBody({ quest, onClose }: { quest: Quest; onClose: () => void }) {
           )}
 
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={onClose} className="rounded-full px-4 py-2 text-sm hover:bg-zinc-100">
+            <button
+              type="button"
+              onClick={onClose}
+              className={BUTTON_SECONDARY}
+            >
               Cancel
             </button>
-            <button
-              type="submit"
-              className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700"
-            >
+            <button type="submit" className={BUTTON_PRIMARY}>
               Save changes
             </button>
           </div>

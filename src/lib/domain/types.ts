@@ -17,6 +17,7 @@ export type Quest = {
 };
 
 export type QuestStatus =
+| { state: "upcoming"; startsOn: DateKey }
   | { state: "active"; streak: number }
   | { state: "paused"; streak: number }
   | { state: "completed"; streak: number }

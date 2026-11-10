@@ -1,4 +1,4 @@
-import { addDays } from "./dates";
+import { addDays, daysBetween } from "./dates";
 import { isSkipped } from "./quest";
 import type { DateKey, Quest, QuestKind } from "./types";
 
@@ -7,9 +7,22 @@ export type NewQuestInput = {
   kind: QuestKind;
   durationDays: number | null;
   skipWeekdays: number[];
+  startDate?: DateKey;
 };
 
 export const MAX_DURATION_DAYS = 365;
+export const MAX_START_AHEAD_DAYS = 365;
+
+function assertStartDate(start: unknown, today: DateKey): asserts start is DateKey {
+  const valid =
+    typeof start === "string" && /^\d{4}-\d{2}-\d{2}$/.test(start) && addDays(start, 0) === start;
+  if (!valid) throw new Error("Invalid start date");
+  const ahead = daysBetween(today, start);
+  if (ahead < 0) throw new Error("A quest can't start in the past");
+  if (ahead > MAX_START_AHEAD_DAYS) {
+    throw new Error(`Start date must be within ${MAX_START_AHEAD_DAYS} days`);
+  }
+}
 
 export function createQuest(input: NewQuestInput, today: DateKey, id: string): Quest {
   const title = input.title.trim();
@@ -23,12 +36,15 @@ export function createQuest(input: NewQuestInput, today: DateKey, id: string): Q
     throw new Error("You can't skip every day of the week");
   }
 
+  const startDate = input.startDate ?? today;
+  assertStartDate(startDate, today);
+
   const quest: Quest = {
     id,
     title,
     kind: input.kind,
     durationDays: null,
-    startDate: today,
+    startDate,
     checkIns: [],
     restoredDates: [],
     skipWeekdays,
@@ -46,7 +62,7 @@ export function createQuest(input: NewQuestInput, today: DateKey, id: string): Q
 
   // A quest whose every day is skipped could never be completed.
   const hasScheduledDay = Array.from({ length: days }, (_, i) =>
-    addDays(today, i),
+    addDays(startDate, i),
   ).some((d) => !isSkipped(quest, d));
   if (!hasScheduledDay) throw new Error("Every day in this quest would be skipped");
 

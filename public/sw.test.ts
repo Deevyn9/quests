@@ -3,20 +3,30 @@ import { join } from "node:path";
 import vm from "node:vm";
 import { describe, expect, it, vi } from "vitest";
 
-// Runs public/sw.js in a sandbox with a fake cache and fake fetch.
+// Runs public/sw.js in a sandbox with fake caches and a fake network.
+type Res = { status: number; ok: boolean; type: string; redirected: boolean; tag: string; clone: () => Res };
+const res = (tag: string, over: Partial<Res> = {}): Res => {
+  const r: Res = { status: 200, ok: true, type: "basic", redirected: false, tag, clone: () => r, ...over };
+  return r;
+};
+
 function load(fetchImpl: (r: unknown) => Promise<unknown>) {
   const handlers: Record<string, (e: unknown) => void> = {};
-  const store = new Map<string, unknown>();
-  const cache = {
-    add: vi.fn(async (url: string) => void store.set(url, { offline: true })),
-    put: vi.fn(async (req: { url: string }, res: unknown) => void store.set(new URL(req.url).pathname, res)),
+  const stores = new Map<string, Map<string, unknown>>();
+  const bucket = (name: string) => {
+    if (!stores.has(name)) stores.set(name, new Map());
+    return stores.get(name)!;
   };
+  const keyOf = (req: string | { url: string }) =>
+    typeof req === "string" ? req : new URL(req.url).pathname;
   const caches = {
-    open: async () => cache,
-    keys: async () => ["old-cache", "quests-static-v1"],
-    delete: vi.fn(async () => true),
-    match: async (req: string | { url: string }) =>
-      store.get(typeof req === "string" ? req : new URL(req.url).pathname),
+    open: async (name: string) => ({
+      add: async (url: string) => void bucket(name).set(url, res("offline-page")),
+      put: async (req: string | { url: string }, r: unknown) => void bucket(name).set(keyOf(req), r),
+      match: async (req: string | { url: string }) => bucket(name).get(keyOf(req)),
+    }),
+    keys: async () => ["old-cache", "quests-static-v2", "quests-pages-v1"],
+    delete: vi.fn(async (name: string) => stores.delete(name)),
   };
   const self = {
     location: { origin: "https://quests.test" },
@@ -25,9 +35,9 @@ function load(fetchImpl: (r: unknown) => Promise<unknown>) {
     clients: { claim: vi.fn() },
   };
   vm.runInNewContext(readFileSync(join(process.cwd(), "public/sw.js"), "utf8"), {
-    self, caches, fetch: fetchImpl, URL, Response: { error: () => "error-response" },
+    self, caches, fetch: fetchImpl, URL, Response: { error: () => res("error") },
   });
-  return { handlers, store, cache, caches };
+  return { handlers, stores, bucket, caches };
 }
 
 function fetchEvent(url: string, init: { method?: string; mode?: string } = {}) {
@@ -40,54 +50,189 @@ function fetchEvent(url: string, init: { method?: string; mode?: string } = {}) 
     result: () => responded,
   };
 }
+const nav = (url: string) => fetchEvent(url, { mode: "navigate" });
+const flush = () => new Promise((r) => setTimeout(r, 0));
 
-const okResponse = () => ({ status: 200, clone: () => ({ status: 200 }) });
-
-describe("service worker", () => {
-  it("precaches only the offline page on install", async () => {
-    const sw = load(async () => okResponse());
+describe("installing", () => {
+  it("precaches only the offline page", async () => {
+    const sw = load(async () => res("net"));
     let waited: Promise<unknown> = Promise.resolve();
     sw.handlers.install({ waitUntil: (p: Promise<unknown>) => (waited = p) });
     await waited;
-    expect(sw.cache.add).toHaveBeenCalledWith("/offline.html");
+    expect([...sw.bucket("quests-static-v2").keys()]).toEqual(["/offline.html"]);
+    expect(sw.bucket("quests-pages-v1").size).toBe(0);
   });
 
-  it("serves the offline page when a navigation fails", async () => {
-    const sw = load(async () => { throw new Error("offline"); });
-    sw.store.set("/offline.html", { offline: true });
-    const f = fetchEvent("https://quests.test/", { mode: "navigate" });
+  it("removes unknown old caches on activate, and keeps its own two", async () => {
+    const sw = load(async () => res("net"));
+    let waited: Promise<unknown> = Promise.resolve();
+    sw.handlers.activate({ waitUntil: (p: Promise<unknown>) => (waited = p) });
+    await waited;
+    expect(sw.caches.delete).toHaveBeenCalledTimes(1);
+    expect(sw.caches.delete).toHaveBeenCalledWith("old-cache");
+  });
+});
+
+describe("opening the app", () => {
+  it("goes to the network first, and keeps a copy of the home page", async () => {
+    const home = res("fresh-home");
+    const sw = load(async () => home);
+    const f = nav("https://quests.test/");
     sw.handlers.fetch(f.event);
-    expect(await f.result()).toEqual({ offline: true });
+    expect(await f.result()).toBe(home);
+    await flush();
+    expect(sw.bucket("quests-pages-v1").get("/")).toBe(home);
   });
 
-  it("passes navigations through to the network when online, without caching them", async () => {
-    const page = okResponse();
-    const sw = load(async () => page);
-    const f = fetchEvent("https://quests.test/", { mode: "navigate" });
+  it("opens the saved home page when offline", async () => {
+    const online = load(async () => res("saved-home"));
+    const f1 = nav("https://quests.test/");
+    online.handlers.fetch(f1.event);
+    await f1.result();
+    await flush();
+
+    const sw = load(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    sw.stores.set("quests-pages-v1", online.stores.get("quests-pages-v1")!);
+    const f2 = nav("https://quests.test/");
+    sw.handlers.fetch(f2.event);
+    expect(((await f2.result()) as Res).tag).toBe("saved-home");
+  });
+
+  it("shows the offline page when there's no saved home page yet", async () => {
+    const sw = load(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    sw.bucket("quests-static-v2").set("/offline.html", res("offline-page"));
+    const f = nav("https://quests.test/");
     sw.handlers.fetch(f.event);
-    expect(await f.result()).toBe(page);
-    expect(sw.cache.put).not.toHaveBeenCalled();
+    expect(((await f.result()) as Res).tag).toBe("offline-page");
   });
 
-  it("caches static assets after the first fetch and then serves them from cache", async () => {
-    const fetchMock = vi.fn(async () => okResponse());
-    const sw = load(fetchMock);
+  it("only offers the offline page, not the home page, for other routes", async () => {
+    const sw = load(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    sw.bucket("quests-pages-v1").set("/", res("saved-home"));
+    sw.bucket("quests-static-v2").set("/offline.html", res("offline-page"));
+    const f = nav("https://quests.test/anything-else");
+    sw.handlers.fetch(f.event);
+    expect(((await f.result()) as Res).tag).toBe("offline-page");
+  });
+
+  it("doesn't save errors, redirects or other routes as the home page", async () => {
+    for (const [url, response] of [
+      ["https://quests.test/", res("err", { ok: false, status: 500 })],
+      ["https://quests.test/", res("redirected", { redirected: true })],
+      ["https://quests.test/", res("opaque", { type: "opaqueredirect" })],
+      ["https://quests.test/other", res("other")],
+    ] as const) {
+      const sw = load(async () => response);
+      const f = nav(url);
+      sw.handlers.fetch(f.event);
+      await f.result();
+      await flush();
+      expect(sw.bucket("quests-pages-v1").size, response.tag).toBe(0);
+    }
+  });
+});
+
+describe("signing out", () => {
+  it("deletes the saved page when the app says CLEAR_PAGES", async () => {
+    const sw = load(async () => res("net"));
+    sw.bucket("quests-pages-v1").set("/", res("saved-home"));
+    let waited: Promise<unknown> = Promise.resolve();
+    sw.handlers.message({ data: { type: "CLEAR_PAGES" }, waitUntil: (p: Promise<unknown>) => (waited = p) });
+    await waited;
+    expect(sw.stores.has("quests-pages-v1")).toBe(false);
+  });
+
+  it("fetches and keeps the home page when asked (first ever visit)", async () => {
+    const home = res("first-visit-home");
+    const sw = load(async () => home);
+    let waited: Promise<unknown> = Promise.resolve();
+    sw.handlers.message({ data: { type: "CACHE_HOME" }, waitUntil: (p: Promise<unknown>) => (waited = p) });
+    await waited;
+    await flush();
+    expect(sw.bucket("quests-pages-v1").get("/")).toBe(home);
+  });
+
+  it("doesn't fail, or save anything, when CACHE_HOME is asked while offline", async () => {
+    const sw = load(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    let waited: Promise<unknown> = Promise.resolve();
+    sw.handlers.message({ data: { type: "CACHE_HOME" }, waitUntil: (p: Promise<unknown>) => (waited = p) });
+    await expect(waited).resolves.toBeUndefined();
+    expect(sw.bucket("quests-pages-v1").size).toBe(0);
+  });
+
+  it("ignores other messages", () => {
+    const sw = load(async () => res("net"));
+    sw.handlers.message({ data: { type: "SOMETHING" }, waitUntil: () => { throw new Error("should not wait"); } });
+    expect(sw.caches.delete).not.toHaveBeenCalled();
+  });
+});
+
+describe("static files", () => {
+  it("always asks the network first, so a changed file wins, and keeps the latest copy", async () => {
+    let version = "v1";
+    const sw = load(async () => res(`app-${version}`));
+    const first = fetchEvent("https://quests.test/_next/static/app.js");
+    sw.handlers.fetch(first.event);
+    expect(await first.result()).toMatchObject({ tag: "app-v1" });
+    await flush();
+
+    version = "v2"; // the file changed on the server
+    const second = fetchEvent("https://quests.test/_next/static/app.js");
+    sw.handlers.fetch(second.event);
+    expect(await second.result()).toMatchObject({ tag: "app-v2" });
+    await flush();
+    expect(sw.bucket("quests-static-v2").get("/_next/static/app.js")).toMatchObject({ tag: "app-v2" });
+  });
+
+  it("serves the saved copy when the network is gone", async () => {
+    let online = true;
+    const sw = load(async () => {
+      if (!online) throw new Error("offline");
+      return res("app-online");
+    });
     const first = fetchEvent("https://quests.test/_next/static/app.js");
     sw.handlers.fetch(first.event);
     await first.result();
-    await Promise.resolve();
-    expect(sw.cache.put).toHaveBeenCalledOnce();
+    await flush();
 
+    online = false;
     const second = fetchEvent("https://quests.test/_next/static/app.js");
     sw.handlers.fetch(second.event);
-    await second.result();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(await second.result()).toMatchObject({ tag: "app-online" });
   });
 
-  it("ignores writes, other origins, the API and anything else", () => {
-    const sw = load(async () => okResponse());
+  it("fails cleanly offline for a file it never saved", async () => {
+    const sw = load(async () => {
+      throw new Error("offline");
+    });
+    const f = fetchEvent("https://quests.test/_next/static/never.js");
+    sw.handlers.fetch(f.event);
+    expect(await f.result()).toMatchObject({ tag: "error" });
+  });
+
+  it("does not cache failed responses", async () => {
+    const sw = load(async () => res("missing", { status: 404, ok: false }));
+    const f = fetchEvent("https://quests.test/_next/static/gone.js");
+    sw.handlers.fetch(f.event);
+    await f.result();
+    await flush();
+    expect(sw.bucket("quests-static-v2").size).toBe(0);
+  });
+});
+
+describe("what it never touches", () => {
+  it("ignores saves (POST), other websites, the sign-in API and everything else", () => {
+    const sw = load(async () => res("net"));
     for (const f of [
-      fetchEvent("https://quests.test/_next/static/a.js", { method: "POST" }),
+      fetchEvent("https://quests.test/", { method: "POST", mode: "navigate" }),
       fetchEvent("https://other.test/_next/static/a.js"),
       fetchEvent("https://quests.test/api/auth/session"),
       fetchEvent("https://quests.test/some-data.json"),
@@ -95,14 +240,5 @@ describe("service worker", () => {
       sw.handlers.fetch(f.event);
       expect(f.result()).toBeUndefined();
     }
-  });
-
-  it("removes old caches on activate", async () => {
-    const sw = load(async () => okResponse());
-    let waited: Promise<unknown> = Promise.resolve();
-    sw.handlers.activate({ waitUntil: (p: Promise<unknown>) => (waited = p) });
-    await waited;
-    expect(sw.caches.delete).toHaveBeenCalledWith("old-cache");
-    expect(sw.caches.delete).toHaveBeenCalledTimes(1);
   });
 });

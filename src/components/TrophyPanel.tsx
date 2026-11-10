@@ -23,7 +23,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 function Chip({ children }: { children: ReactNode }) {
   return (
-    <li className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-700">
+    <li className="rounded-control bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-700">
       {children}
     </li>
   );
@@ -46,7 +46,7 @@ function TrophyItem({
         <p className="font-medium">{trophy.title}</p>
         {trophy.restores > 0 && (
           <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+            className={`rounded-control shrink-0 px-2 py-0.5 text-xs font-medium ${
               earnedOn
                 ? "bg-amber-100 text-amber-800"
                 : "bg-zinc-100 text-zinc-600"
@@ -124,8 +124,10 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
         aria-label="Trophies and completed quests"
         aria-hidden={!open}
         inert={!open}
-        className={`fixed top-3 right-3 bottom-3 z-50 flex w-[calc(100%-1.5rem)] max-w-sm flex-col rounded-xl border border-zinc-200 bg-white transition-transform duration-300 ease-out ${
-          open ? "translate-x-0" : "translate-x-[calc(100%+1.5rem)]"
+        className={`rounded-surface fixed top-3 right-3 bottom-3 z-50 flex w-[calc(100%-1.5rem)] max-w-sm flex-col border border-zinc-200 bg-white transition-transform ${
+          open
+            ? "translate-x-0 duration-500 ease-[cubic-bezier(0.22,1.15,0.36,1)]"
+            : "translate-x-[calc(100%+1.5rem)] duration-300 ease-out"
         }`}
       >
         <div className="flex items-center justify-between px-5 pt-5">
@@ -135,7 +137,7 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
             type="button"
             aria-label="Close trophies"
             onClick={onClose}
-            className="grid size-9 place-items-center rounded-full text-lg hover:bg-zinc-100"
+            className="rounded-control ease-spring grid size-9 place-items-center text-lg transition duration-300 hover:bg-zinc-100 active:scale-95"
           >
             ×
           </button>
@@ -151,7 +153,7 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
               aria-selected={tab === t.id}
               aria-controls={`panel-${t.id}`}
               onClick={() => setTab(t.id)}
-              className={`rounded-full px-4 py-1.5 text-sm transition ${
+              className={`rounded-control ease-spring px-4 py-1.5 text-sm transition duration-300 active:scale-95 ${
                 tab === t.id
                   ? "bg-zinc-900 text-white"
                   : "bg-zinc-100 hover:bg-zinc-200"

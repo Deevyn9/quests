@@ -37,7 +37,7 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-zinc-900/10 p-4 backdrop-blur-sm"
+      className="animate-fade-in fixed inset-0 z-50 grid place-items-center bg-zinc-900/10 p-4 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
@@ -46,7 +46,7 @@ export function ConfirmDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-heading"
-        className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6"
+        className="animate-pop-in rounded-surface w-full max-w-sm border border-zinc-200 bg-white p-6"
       >
         <h2 id="confirm-heading" className="text-lg font-semibold">
           {title}
@@ -57,17 +57,17 @@ export function ConfirmDialog({
             type="button"
             autoFocus
             onClick={onCancel}
-            className="rounded-full px-4 py-2 text-sm hover:bg-zinc-100"
+            className="rounded-control ease-spring inline-flex h-10 items-center justify-center px-4 text-sm font-medium transition duration-300 hover:bg-zinc-100 active:scale-95"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className={`rounded-full px-5 py-2 text-sm font-medium text-white ${
+            className={`rounded-control ease-spring inline-flex h-10 items-center justify-center px-5 text-sm font-medium text-white transition duration-300 active:scale-95 ${
               destructive
                 ? "bg-red-600 hover:bg-red-700"
-                : "bg-zinc-900 hover:bg-zinc-700"
+                : "bg-blue-400 hover:bg-blue-500"
             }`}
           >
             {confirmLabel}

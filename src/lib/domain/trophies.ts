@@ -88,7 +88,7 @@ export function qualifyingTrophies(quests: Quest[], today: DateKey): string[] {
   const statuses = quests.map((q) => getStatus(q, today));
   const bestStreak = Math.max(
     0,
-    ...statuses.map((s) => (s.state === "lapsed" ? 0 : s.streak)),
+    ...statuses.map((s) => (s.state === "lapsed" || s.state === "upcoming" ? 0 : s.streak)),
   );
   const completedCount = statuses.filter((s) => s.state === "completed").length;
   const checkedInToday = quests.filter((q) => q.checkIns.includes(today)).length;

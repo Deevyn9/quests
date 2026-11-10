@@ -92,6 +92,7 @@ function isCompleted(q: Quest): boolean {
 }
 
 export function getStatus(q: Quest, today: DateKey): QuestStatus {
+  if (today < q.startDate) return { state: "upcoming", startsOn: q.startDate };
   const streak = streakOf(q);
   if (isCompleted(q)) return { state: "completed", streak };
   // On hold from the moment a hold is set, even if it only starts tomorrow
