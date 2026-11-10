@@ -1,5 +1,5 @@
-export const ACCENT_ON = "border-blue-600 bg-blue-600 text-white";
-export const ACCENT_BG = "bg-blue-600";
+export const ACCENT_ON = "border-blue-400 bg-blue-400 text-white";
+export const ACCENT_BG = "bg-blue-400";
 
 export const LABEL = "text-sm font-medium text-zinc-900";
 export const HINT = "text-xs text-zinc-500";
@@ -24,7 +24,7 @@ export const BUTTON_SECONDARY =
   "inline-flex h-10 items-center justify-center rounded-control border border-zinc-300 bg-white px-5 text-sm font-medium text-zinc-900 transition duration-300 ease-spring hover:bg-zinc-50 active:scale-95 motion-reduce:transition-none";
 
 export const BUTTON_PRIMARY =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-control bg-blue-600 px-5 text-sm font-medium text-white transition duration-300 ease-spring hover:bg-blue-700 active:scale-95 motion-reduce:transition-none";
+  "inline-flex h-10 items-center justify-center gap-2 rounded-control bg-blue-400 px-5 text-sm font-medium text-white transition duration-300 ease-spring hover:bg-blue-500 active:scale-95 motion-reduce:transition-none";
 
 export const BUTTON_OUTLINE =
   "inline-flex h-10 items-center justify-center gap-2 rounded-control border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-700 transition duration-300 ease-spring hover:bg-zinc-50 hover:text-zinc-900 active:scale-95 motion-reduce:transition-none";
