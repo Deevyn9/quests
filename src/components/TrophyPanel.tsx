@@ -126,7 +126,7 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
         inert={!open}
         className={`rounded-surface fixed top-3 right-3 bottom-3 z-50 flex w-[calc(100%-1.5rem)] max-w-sm flex-col border border-zinc-200 bg-white transition-transform ${
           open
-            ? "ease-spring translate-x-0 duration-600"
+            ? "translate-x-0 duration-500 ease-[cubic-bezier(0.22,1.15,0.36,1)]"
             : "translate-x-[calc(100%+1.5rem)] duration-300 ease-out"
         }`}
       >
