@@ -155,8 +155,8 @@ export function TrophyPanel({ open, onClose, trophies, completed }: Props) {
               onClick={() => setTab(t.id)}
               className={`rounded-control ease-spring px-4 py-1.5 text-sm transition duration-300 active:scale-95 ${
                 tab === t.id
-                  ? "bg-zinc-900 text-white"
-                  : "bg-zinc-100 hover:bg-zinc-200"
+                  ? "bg-blue-400 text-white"
+                  : "bg-blue-100 hover:bg-blue-200"
               }`}
             >
               {t.label}
