@@ -67,7 +67,7 @@ export function ConfirmDialog({
             className={`rounded-control ease-spring inline-flex h-10 items-center justify-center px-5 text-sm font-medium text-white transition duration-300 active:scale-95 ${
               destructive
                 ? "bg-red-600 hover:bg-red-700"
-                : "bg-blue-600 hover:bg-blue-700"
+                : "bg-blue-400 hover:bg-blue-500"
             }`}
           >
             {confirmLabel}
